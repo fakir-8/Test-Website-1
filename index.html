@@ -1945,7 +1945,7 @@ Download Image
 const CONFIG = {
 // REQUIRED: Your Google Apps Script web app URL (after deployment)
 // Example: "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"
-APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbz1WLsLZYQKGxQ1hOMnouyH20hz-WOa-lIhBd99kUVirYWdncW0Gw9oLSmkWsUQVweN/exec", // TODO: Replace with your deployed Apps Script URL
+APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbywzCXJ-IAlK_nuNOLL_gkmEgDNbOwAaP79w4IY39Dc0USsbgohRK-BnQD9KrccN54/exec", // TODO: Replace with your deployed Apps Script URL
 
 // REQUIRED: Shared secret for server validation (must match Script Properties SERVICE_SECRET)
 // Example: "my-secret-key-12345"
@@ -2218,9 +2218,9 @@ try {
 // Add metadata
 const enrichedPayload = {
 ...payload,
+service_key: CONFIG.SERVICE_SECRET,
 origin: window.location.origin,
-userAgent: navigator.userAgent,
-timestamp: new Date().toISOString()
+userAgent: navigator.userAgent
 };
 
 console.log('Submitting order to Apps Script...', enrichedPayload);
@@ -2229,7 +2229,7 @@ const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
 method: 'POST',
 headers: {
 'Content-Type': 'application/json',
-'X-SERVICE-KEY': CONFIG.SERVICE_SECRET
+
 },
 body: JSON.stringify(enrichedPayload),
 signal: controller.signal
