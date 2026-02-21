@@ -2202,12 +2202,26 @@ AppState.products = MOCK_DATA;
 * Validates success response before proceeding
 */
 async submitOrder(payload) {
-// Validation
-if (!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL === "YOUR_APPS_SCRIPT_URL_HERE") {
-throw new Error("Apps Script URL not configured. Please set CONFIG.APPS_SCRIPT_URL");
-}
-if (!CONFIG.SERVICE_SECRET || CONFIG.SERVICE_SECRET === "YOUR_SERVICE_SECRET_HERE") {
-throw new Error("Service secret not configured. Please set CONFIG.SERVICE_SECRET");
+// --- REPLACE the existing fetch block in submitOrder with this ---
+const enrichedPayload = {
+  ...payload,                         // <-- fix: use spread operator
+  service_key: CONFIG.SERVICE_SECRET, // <-- secret inside JSON body
+  origin: window.location.origin,
+  userAgent: navigator.userAgent,
+  timestamp: new Date().toISOString()
+};
+
+console.log('Submitting order to Apps Script (payload):', enrichedPayload);
+
+// Use text/plain to avoid triggering CORS preflight on Apps Script
+const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'text/plain'   // <-- important: prevents OPTIONS preflight
+  },
+  body: JSON.stringify(enrichedPayload),
+  signal: controller.signal
+});
 }
 
 // Setup timeout
