@@ -142,7 +142,7 @@ font-family: var(--font-primary); font-weight: 600; font-size: clamp(1rem, 2vw, 
 .select-input {
 appearance: none; -webkit-appearance: none; padding: var(--space-2) var(--space-6) var(--space-2) var(--space-3);
 border: 1px solid var(--border); border-radius: var(--radius-sm);
-background: var(--bg-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23001a33' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 12px center;
+background: var(--bg-card) url("image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23001a33' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 12px center;
 font-family: var(--font-secondary); color: var(--text-main); font-size: 0.95rem; cursor: pointer; transition: var(--transition);
 }
 .select-input:hover, .select-input:focus { border-color: var(--accent); outline: none; }
@@ -203,7 +203,7 @@ transition: transform 0.2s, background 0.2s, box-shadow 0.2s; margin-top: auto;
 .btn-back:hover { color: var(--primary); transform: translateX(-4px); }
 .detail-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-6); align-items: start; }
 
-/* Desktop Refinement */
+/* Desktop Refinement - Compact & Premium */
 @media (min-width: 992px) { 
     .detail-grid { grid-template-columns: 1.1fr 0.9fr; gap: var(--space-7); } 
     .main-image-container { max-height: 500px; } /* Reduced size */
@@ -244,7 +244,10 @@ display: flex; justify-content: center; align-items: center; gap: var(--space-3)
 .btn-add-large:disabled { background: var(--border-hover); color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
 
 /* --- REVIEWS MARQUEE (Seamless Infinite) --- */
-.reviews-section { padding: var(--space-7) 0; overflow: hidden; background: var(--bg-card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: var(--space-7) 0; }
+.reviews-section { padding: var(--space-7) 0; overflow: hidden; 
+/* Advanced Gradient Background */
+background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); 
+border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: var(--space-7) 0; }
 .marquee-container { position: relative; width: 100vw; max-width: 100%; overflow: hidden; display: flex; }
 /* Duplicate track for seamless loop */
 .marquee-track { display: flex; gap: var(--space-5); width: max-content; animation: marquee 40s linear infinite; padding: var(--space-4); }
@@ -259,7 +262,11 @@ border: 4px solid white; transition: transform 0.3s;
 .review-card:hover { transform: scale(1.05) rotate(0deg) !important; z-index: 10; }
 
 /* --- FAQ SECTION (Animated & Responsive) --- */
-.faq-section { max-width: 800px; margin: 0 auto var(--space-8); padding: 0 var(--space-4); }
+.faq-section { max-width: 800px; margin: 0 auto var(--space-8); padding: 0 var(--space-4); 
+/* Advanced Gradient Background */
+background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+border-radius: var(--radius-xl); padding-top: var(--space-6); padding-bottom: var(--space-6);
+}
 .faq-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: var(--space-3); transition: var(--transition); overflow: hidden; }
 .faq-item:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); }
 .faq-summary { 
@@ -289,6 +296,12 @@ details[open] .faq-content {
 .floating-contact {
     position: fixed; bottom: 24px; right: 24px; z-index: 900;
     display: flex; flex-direction: column; gap: 12px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.floating-contact.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
 }
 .float-btn {
     width: 56px; height: 56px; border-radius: 50%;
@@ -365,7 +378,7 @@ details[open] .faq-content {
 .payment-header { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
 .payment-logo { height: 32px; object-fit: contain; }
 .payment-number { font-family: var(--font-en); font-weight: 700; font-size: 1.2rem; color: var(--primary); letter-spacing: 1px; background: var(--bg-layer); padding: 4px 8px; border-radius: 4px; }
-.payment-text { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+.payment-text { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; padding-right: 110px; /* Space for QR */ }
 .qr-code-container {
     position: absolute; right: var(--space-4); top: 50%; transform: translateY(-50%);
     width: 100px; height: 100px; background: white; padding: 4px; border: 1px solid var(--border);
@@ -392,8 +405,11 @@ details[open] .faq-content {
 .policy-text { font-size: 0.95rem; color: var(--text-muted); margin-bottom: var(--space-5); text-align: left; background: var(--bg-layer); padding: var(--space-4); border-radius: var(--radius-sm); }
 .policy-checkbox-wrapper { display: flex; align-items: center; gap: var(--space-3); justify-content: center; margin-bottom: var(--space-5); }
 .policy-checkbox { width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer; }
-.btn-policy-confirm { width: 100%; padding: var(--space-3); background: var(--success); color: white; font-family: var(--font-primary); font-weight: 700; font-size: 1.1rem; border-radius: var(--radius-sm); transition: var(--transition); }
+.policy-actions { display: flex; gap: var(--space-3); }
+.btn-policy-confirm { flex: 2; padding: var(--space-3); background: var(--success); color: white; font-family: var(--font-primary); font-weight: 700; font-size: 1.1rem; border-radius: var(--radius-sm); transition: var(--transition); }
 .btn-policy-confirm:disabled { background: var(--border-hover); cursor: not-allowed; }
+.btn-policy-cancel { flex: 1; padding: var(--space-3); background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-primary); font-weight: 600; font-size: 1rem; border-radius: var(--radius-sm); transition: var(--transition); }
+.btn-policy-cancel:hover { background: var(--bg-layer); color: var(--danger); border-color: var(--danger); }
 
 /* CONFIRM MODAL */
 .confirm-modal { position: fixed; inset: 0; background: rgba(0, 26, 51, 0.85); z-index: 400; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: var(--transition); padding: var(--space-4); }
@@ -430,8 +446,8 @@ details[open] .faq-content {
     box-shadow: var(--shadow-sm);
 }
 .voucher-logo {
-    position: absolute; top: var(--space-4); left: var(--space-4);
-    height: 30px; filter: invert(1) hue-rotate(180deg) brightness(0.1); opacity: 0.8;
+    position: absolute; top: var(--space-3); left: var(--space-4);
+    height: 25px; filter: invert(1) hue-rotate(180deg) brightness(0.1); opacity: 0.8;
 }
 .success-order-id { 
     background: var(--bg-layer); padding: var(--space-3); border-radius: var(--radius-sm); 
@@ -482,6 +498,12 @@ details[open] .faq-content {
 .filter-left { justify-content: space-between; width: 100%; }
 .hero { padding: 10rem 0 6rem; }
 .detail-gallery { position: static; }
+/* Mobile Product Card Size Reduction */
+.product-card { border-radius: var(--radius-md); }
+.card-details { padding: var(--space-3); }
+.product-title { font-size: 0.95rem; }
+.current-price { font-size: 1.15rem; }
+.btn-add { padding: var(--space-2); font-size: 0.85rem; }
 }
 /* Skeletons */
 .skeleton { background: linear-gradient(90deg, #eef2f7 0%, #e0e6ed 50%, #eef2f7 100%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: var(--radius-lg); }
@@ -507,11 +529,12 @@ details[open] .faq-content {
 </nav>
 
 <!-- Floating Contact Buttons -->
-<div class="floating-contact">
+<div class="floating-contact" id="floatingContact">
     <a href="https://wa.me/8801700000000" target="_blank" class="float-btn whatsapp" aria-label="WhatsApp">
         <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
     </a>
     <a href="https://m.me/yourpage" target="_blank" class="float-btn messenger" aria-label="Messenger">
+        <!-- Accurate Messenger Icon Path -->
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.87 1.51 5.43 3.89 7.13.23.17.38.44.38.73v2.64c0 .83.91 1.33 1.61.89l2.97-1.88c.23-.15.51-.19.77-.11.79.23 1.62.36 2.48.36 5.52 0 10-4.03 10-9S17.52 2 12 2zm1.13 10.68l-2.25 2.25c-.39.39-1.02.39-1.41 0l-2.83-2.83c-.39-.39-.39-1.02 0-1.41s1.02-.39 1.41 0l2.12 2.12 4.95-4.95c.39-.39 1.02-.39 1.41 0s.39 1.02 0 1.41l-3.4 3.41z"/></svg>
     </a>
 </div>
@@ -778,7 +801,10 @@ details[open] .faq-content {
             <input type="checkbox" id="policyCheckbox" class="policy-checkbox">
             <label for="policyCheckbox" style="font-size: 0.95rem; color: var(--text-main);">I agree to the policy</label>
         </div>
-        <button class="btn-policy-confirm" id="btnPolicyConfirm" disabled>Finally Place Order</button>
+        <div class="policy-actions">
+            <button class="btn-policy-cancel" id="btnPolicyCancel">Cancel</button>
+            <button class="btn-policy-confirm" id="btnPolicyConfirm" disabled>Finally Place Order</button>
+        </div>
     </div>
 </div>
 
@@ -958,6 +984,7 @@ editTrxInput: document.getElementById('editTrxInput'),
 policyModal: document.getElementById('policyModal'),
 policyCheckbox: document.getElementById('policyCheckbox'),
 btnPolicyConfirm: document.getElementById('btnPolicyConfirm'),
+btnPolicyCancel: document.getElementById('btnPolicyCancel'),
 successModal: document.getElementById('successModal'),
 successClose: document.getElementById('successClose'),
 successOrderId: document.getElementById('successOrderId'),
@@ -968,7 +995,8 @@ downloadImageBtn: document.getElementById('downloadImageBtn'),
 toastContainer: document.getElementById('toastContainer'),
 logoLink: document.getElementById('logoLink'),
 backBtn: document.getElementById('backBtn'),
-paginationContainer: document.getElementById('paginationContainer')
+paginationContainer: document.getElementById('paginationContainer'),
+floatingContact: document.getElementById('floatingContact')
 };
 // UTILITIES
 const Utils = {
@@ -1373,6 +1401,12 @@ const priceA = a.discount_price > 0 ? a.discount_price : a.price; const priceB =
 if (sort === 'price_asc') return priceA - priceB;
 if (sort === 'price_desc') return priceB - priceA;
 if (sort === 'stock') return b.stock - a.stock;
+// Logic fix: Sort by date_added (newest first). 
+// If dates are equal (e.g. mock data), use index as fallback (later items in array are newer)
+if (sort === 'newest') {
+    if (b.date_added !== a.date_added) return b.date_added - a.date_added;
+    return AppState.products.indexOf(b) - AppState.products.indexOf(a);
+}
 return b.date_added - a.date_added;
 });
 return filtered;
@@ -1424,8 +1458,20 @@ DOM.toastContainer.appendChild(toast);
 void toast.offsetWidth; toast.classList.add('show');
 setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3000);
 },
-openCart() { DOM.cartDrawer.classList.add('active'); DOM.cartOverlay.classList.add('active'); document.body.style.overflow = 'hidden'; },
-closeCart() { DOM.cartDrawer.classList.remove('active'); DOM.cartOverlay.classList.remove('active'); document.body.style.overflow = ''; },
+openCart() { 
+    DOM.cartDrawer.classList.add('active'); 
+    DOM.cartOverlay.classList.add('active'); 
+    document.body.style.overflow = 'hidden'; 
+    // Hide floating icons
+    if(DOM.floatingContact) DOM.floatingContact.classList.add('hidden');
+},
+closeCart() { 
+    DOM.cartDrawer.classList.remove('active'); 
+    DOM.cartOverlay.classList.remove('active'); 
+    document.body.style.overflow = ''; 
+    // Show floating icons
+    if(DOM.floatingContact) DOM.floatingContact.classList.remove('hidden');
+},
 openModal() { if (!Cart.validateStock()) return; Render.modalSummary(); DOM.modal.classList.add('active'); this.closeCart(); },
 closeModal() { DOM.modal.classList.remove('active'); DOM.retryOrderBtn.classList.remove('show'); },
 openConfirmModal() {
@@ -1457,6 +1503,7 @@ const detailsHTML = `
 ${orderDetails.trxId ? `<div class="detail-row"><span style="color: var(--text-muted);">Trx ID:</span><span style="font-family: var(--font-en); font-weight: 600;">${Utils.sanitizeHTML(orderDetails.trxId)}</span></div>` : ''}
 ${orderDetails.lastFourDigits ? `<div class="detail-row"><span style="color: var(--text-muted);">Last 4:</span><span style="font-family: var(--font-en); font-weight: 600;">${Utils.sanitizeHTML(orderDetails.lastFourDigits)}</span></div>` : ''}
 <div style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px dashed var(--border-hover);">
+<div style="font-family: var(--font-primary); font-weight: 700; color: var(--primary); margin-bottom: 8px;">Items</div>
 ${AppState.cart.map(item => { const price = item.discount_price > 0 ? item.discount_price : item.price; return `<div class="detail-row"><span>${Utils.sanitizeHTML(item.name)} × ${item.qty}</span><span style="font-family: var(--font-en); font-weight: 500;">${Utils.formatMoney(price * item.qty)}</span></div>`; }).join('')}
 </div>
 <div style="margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px dashed var(--border-hover);">
@@ -1466,8 +1513,14 @@ ${AppState.cart.map(item => { const price = item.discount_price > 0 ? item.disco
 </div>
 `;
 DOM.successDetails.innerHTML = detailsHTML; DOM.successModal.classList.add('active');
+// Hide floating icons on success modal
+if(DOM.floatingContact) DOM.floatingContact.classList.add('hidden');
 },
-closeSuccessModal() { DOM.successModal.classList.remove('active'); },
+closeSuccessModal() { 
+    DOM.successModal.classList.remove('active'); 
+    // Show floating icons
+    if(DOM.floatingContact) DOM.floatingContact.classList.remove('hidden');
+},
 toggleLoader(isLoading) {
 const btn = DOM.submitOrderBtn;
 if (isLoading) { btn.disabled = true; btn.innerHTML = '<span style="display:inline-block; width:20px; height:20px; border:3px solid #fff; border-top-color:transparent; border-radius:50%; animation: spin 1s linear infinite"></span>'; }
@@ -1619,14 +1672,25 @@ if (typeof html2canvas === 'undefined') { UI.showToast("ডাউনলোড �
 UI.showToast("ইমেজ তৈরি হচ্ছে...", "success");
 // Target ONLY the voucher container
 const element = document.getElementById('voucherCapture');
-const canvas = await html2canvas(element, { backgroundColor: '#ffffff', scale: 2, logging: false });
+if(!element) throw new Error("Voucher element not found");
+
+const canvas = await html2canvas(element, { 
+    backgroundColor: '#ffffff', 
+    scale: 3, // High quality
+    logging: false,
+    useCORS: true 
+});
 canvas.toBlob((blob) => {
+if(!blob) throw new Error("Canvas to Blob failed");
 const url = URL.createObjectURL(blob); const link = document.createElement('a');
 link.href = url; link.download = `order-${DOM.successOrderId.textContent}.png`;
 document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
 UI.showToast("ইমেজ ডাউনলোড সম্পন্ন হয়েছে!", "success");
 });
-} catch (error) { UI.showToast("ইমেজ তৈরি করা যায়নি। টেক্সট কপি করা হচ্ছে...", "warning"); copySummary(); }
+} catch (error) { 
+    console.error(error);
+    UI.showToast("ইমেজ তৈরি করা যায়নি। টেক্সট কপি করা হচ্ছে...", "warning"); copySummary(); 
+}
 }
 // INIT
 function initEventListeners() {
@@ -1649,6 +1713,9 @@ DOM.policyCheckbox.addEventListener('change', (e) => {
 DOM.btnPolicyConfirm.addEventListener('click', () => {
     UI.closePolicyModal();
     Checkout.finalSubmit();
+});
+DOM.btnPolicyCancel.addEventListener('click', () => {
+    UI.closePolicyModal();
 });
 
 DOM.btnYes.addEventListener('click', () => { 
