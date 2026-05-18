@@ -1,3300 +1,963 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Personal Cinema & IPTV</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>CipherChat — End-to-End Encrypted</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-<!-- Cross-Origin Isolation headers (needed for SharedArrayBuffer / VLC WASM threads) -->
-<!-- Deploy behind a server that sets:
-     Cross-Origin-Opener-Policy: same-origin
-     Cross-Origin-Embedder-Policy: require-corp -->
-
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['DM Sans', 'sans-serif'],
+          mono: ['JetBrains Mono', 'monospace'],
+        },
+        colors: {
+          surface: {
+            950: '#070709',
+            900: '#0d0d11',
+            800: '#13131a',
+            700: '#1a1a24',
+            600: '#22222f',
+            500: '#2c2c3d',
+          },
+          accent: {
+            400: '#7c6aff',
+            500: '#6c57ff',
+            600: '#5a43f5',
+          },
+          teal: {
+            400: '#2dd4bf',
+            500: '#14b8a6',
+          }
+        },
+        backdropBlur: { xs: '2px' },
+        animation: {
+          'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          'fade-in': 'fadeIn 0.25s ease',
+          'pulse-dot': 'pulseDot 1.4s ease-in-out infinite',
+          'shake': 'shake 0.4s ease',
+          'toast-in': 'toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+          'toast-out': 'toastOut 0.25s ease forwards',
+        },
+        keyframes: {
+          slideUp: {
+            '0%': { opacity: '0', transform: 'translateY(12px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' },
+          },
+          fadeIn: {
+            '0%': { opacity: '0' },
+            '100%': { opacity: '1' },
+          },
+          pulseDot: {
+            '0%, 80%, 100%': { transform: 'scale(0.6)', opacity: '0.4' },
+            '40%': { transform: 'scale(1)', opacity: '1' },
+          },
+          shake: {
+            '0%, 100%': { transform: 'translateX(0)' },
+            '20%': { transform: 'translateX(-6px)' },
+            '40%': { transform: 'translateX(6px)' },
+            '60%': { transform: 'translateX(-4px)' },
+            '80%': { transform: 'translateX(4px)' },
+          },
+          toastIn: {
+            '0%': { opacity: '0', transform: 'translateY(20px) scale(0.95)' },
+            '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+          },
+          toastOut: {
+            '0%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+            '100%': { opacity: '0', transform: 'translateY(10px) scale(0.95)' },
+          },
+        },
+      }
+    }
+  };
+</script>
 
 <style>
-/* ═══════════════════════════════════════════════════
-   MD3 DESIGN TOKENS — DARK CINEMA PALETTE
-═══════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-:root {
-  /* MD3 Color System — Obsidian Cinema */
-  --md-sys-color-primary:            #D0BCFF;
-  --md-sys-color-on-primary:         #21005D;
-  --md-sys-color-primary-container:  #4F378B;
-  --md-sys-color-secondary:          #CCC2DC;
-  --md-sys-color-tertiary:           #EFB8C8;
-  --md-sys-color-error:              #F2B8B8;
-  --md-sys-color-surface:            #0A0A10;
-  --md-sys-color-surface-1:          #12121C;
-  --md-sys-color-surface-2:          #1A1A28;
-  --md-sys-color-surface-3:          #222235;
-  --md-sys-color-surface-4:          #2A2A42;
-  --md-sys-color-on-surface:         #E6E0F8;
-  --md-sys-color-on-surface-variant: #9A8FAA;
-  --md-sys-color-outline:            #4A4460;
-  --md-sys-color-outline-variant:    #2E2844;
-  --md-elevation-1: 0 2px 8px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
-  --md-elevation-2: 0 4px 20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.06);
-  --md-elevation-3: 0 8px 40px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.08);
-
-  /* Glassmorphism */
-  --glass-bg:      rgba(18, 18, 28, 0.72);
-  --glass-bg-high: rgba(26, 26, 40, 0.88);
-  --glass-blur:    backdrop-filter: blur(24px) saturate(180%);
-  --glass-border:  1px solid rgba(208, 188, 255, 0.12);
-
-  /* Spacing */
-  --sp-xs: 4px; --sp-s: 8px; --sp-m: 16px;
-  --sp-l: 24px; --sp-xl: 32px; --sp-2xl: 48px;
-
-  /* Motion */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-out:    cubic-bezier(0.0, 0.0, 0.2, 1.0);
-  --dur-s: 150ms; --dur-m: 280ms; --dur-l: 420ms;
-
-  font-family: 'Space Grotesk', system-ui, sans-serif;
-  color-scheme: dark;
-}
-
-/* ═══════════════════════════════════════════════════
-   RESET & BASE
-═══════════════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; }
-
-body {
-  background: var(--md-sys-color-surface);
-  color: var(--md-sys-color-on-surface);
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: hidden;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--md-sys-color-outline); border-radius: 2px; }
-
-/* Focus ring for TV remote */
-:focus-visible {
-  outline: 2px solid var(--md-sys-color-primary);
-  outline-offset: 2px;
-  border-radius: 8px;
-}
-
-/* ═══════════════════════════════════════════════════
-   CINEMATIC BACKGROUND
-═══════════════════════════════════════════════════ */
-.bg-canvas {
-  position: fixed; inset: 0; z-index: 0;
-  background:
-    radial-gradient(ellipse 60% 50% at 80% 10%, rgba(79,55,139,.25) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 60% at 10% 90%, rgba(208,188,255,.08) 0%, transparent 60%),
-    radial-gradient(ellipse 80% 30% at 50% 50%, rgba(18,18,40,.95) 0%, transparent 100%),
-    var(--md-sys-color-surface);
-  pointer-events: none;
-}
-.bg-canvas::before {
-  content: '';
-  position: absolute; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
-  opacity: .4;
-}
-
-/* ═══════════════════════════════════════════════════
-   APP SHELL
-═══════════════════════════════════════════════════ */
-#app {
-  position: relative; z-index: 1;
-  height: 100vh;
-  display: grid;
-  grid-template-rows: 56px 1fr;
-  grid-template-columns: 280px 1fr;
-  overflow: hidden;
-}
-
-/* ═══════════════════════════════════════════════════
-   TOP APP BAR
-═══════════════════════════════════════════════════ */
-.top-bar {
-  grid-column: 1 / -1;
-  display: flex; align-items: center; gap: var(--sp-m);
-  padding: 0 var(--sp-l);
-  background: var(--glass-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: var(--glass-border);
-  box-shadow: var(--md-elevation-1);
-  z-index: 100;
-}
-
-.app-logo {
-  display: flex; align-items: center; gap: 10px;
-  font-weight: 700; font-size: 18px;
-  letter-spacing: -.5px;
-  color: var(--md-sys-color-primary);
-}
-.app-logo svg { width: 28px; height: 28px; }
-
-.top-bar-divider { flex: 1; }
-
-.top-bar-actions { display: flex; align-items: center; gap: var(--sp-s); }
-
-.chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: var(--glass-border);
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  font-size: 12px; font-weight: 500;
-  cursor: pointer;
-  transition: all var(--dur-s) var(--ease-out);
-  color: var(--md-sys-color-on-surface-variant);
-  user-select: none;
-}
-.chip:hover, .chip:focus-visible {
-  background: var(--md-sys-color-surface-3);
-  color: var(--md-sys-color-on-surface);
-  transform: translateY(-1px);
-}
-.chip.active {
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-primary);
-  border-color: rgba(208,188,255,.3);
-}
-.chip .dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #4caf50; box-shadow: 0 0 6px #4caf50;
-}
-
-#user-badge {
-  display: flex; align-items: center; gap: 8px;
-  padding: 4px 12px 4px 4px;
-  border-radius: 24px;
-  background: var(--md-sys-color-surface-2);
-  border: var(--glass-border);
-  cursor: pointer;
-  font-size: 13px;
-  transition: all var(--dur-s) var(--ease-out);
-}
-#user-badge:hover { background: var(--md-sys-color-surface-3); }
-.avatar {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--md-sys-color-primary-container), var(--md-sys-color-tertiary));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; color: var(--md-sys-color-primary);
-}
-
-/* ═══════════════════════════════════════════════════
-   LEFT NAVIGATION RAIL
-═══════════════════════════════════════════════════ */
-.nav-rail {
-  background: var(--glass-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-right: var(--glass-border);
-  display: flex; flex-direction: column;
-  padding: var(--sp-m) var(--sp-s);
-  gap: var(--sp-xs);
-  overflow-y: auto;
-}
-
-.nav-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: var(--md-sys-color-on-surface-variant);
-  padding: var(--sp-m) var(--sp-s) var(--sp-s);
-}
-
-.nav-item {
-  display: flex; align-items: center; gap: var(--sp-m);
-  padding: var(--sp-s) var(--sp-m);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all var(--dur-s) var(--ease-out);
-  font-size: 13px; font-weight: 500;
-  color: var(--md-sys-color-on-surface-variant);
-  border: 1px solid transparent;
-  position: relative;
-  user-select: none;
-}
-.nav-item:hover {
-  background: rgba(208,188,255,.08);
-  color: var(--md-sys-color-on-surface);
-}
-.nav-item.active {
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-primary);
-  border-color: rgba(208,188,255,.2);
-}
-.nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
-.nav-badge {
-  margin-left: auto;
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
-  font-size: 10px; font-weight: 700;
-  padding: 2px 7px; border-radius: 20px;
-  min-width: 20px; text-align: center;
-}
-
-.nav-divider {
-  height: 1px;
-  background: var(--md-sys-color-outline-variant);
-  margin: var(--sp-s) var(--sp-s);
-}
-
-/* ═══════════════════════════════════════════════════
-   MAIN CONTENT AREA
-═══════════════════════════════════════════════════ */
-.main-content {
-  overflow-y: auto;
-  padding: var(--sp-l);
-  display: flex; flex-direction: column; gap: var(--sp-l);
-}
-
-/* ═══════════════════════════════════════════════════
-   SECTION HEADERS
-═══════════════════════════════════════════════════ */
-.section-header {
-  display: flex; align-items: center; gap: var(--sp-m);
-  margin-bottom: var(--sp-m);
-}
-.section-title {
-  font-size: 20px; font-weight: 700; letter-spacing: -.3px;
-  color: var(--md-sys-color-on-surface);
-}
-.section-sub {
-  font-size: 12px; color: var(--md-sys-color-on-surface-variant);
-  margin-left: auto;
-}
-.section-accent {
-  width: 3px; height: 20px; border-radius: 2px;
-  background: var(--md-sys-color-primary);
-}
-
-/* ═══════════════════════════════════════════════════
-   MEDIA CARDS — LIBRARY
-═══════════════════════════════════════════════════ */
-.media-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--sp-m);
-}
-
-.media-card {
-  background: var(--glass-bg-high);
-  border-radius: 16px;
-  border: var(--glass-border);
-  overflow: hidden;
-  cursor: pointer;
-  transition: all var(--dur-m) var(--ease-spring);
-  box-shadow: var(--md-elevation-1);
-  position: relative;
-}
-.media-card:hover, .media-card:focus-visible {
-  transform: scale(1.04) translateY(-4px);
-  box-shadow: var(--md-elevation-3);
-  border-color: rgba(208,188,255,.3);
-  z-index: 2;
-}
-.media-card:hover .card-overlay { opacity: 1; }
-
-.card-thumb {
-  width: 100%; padding-bottom: 56.25%;
-  position: relative;
-  background: var(--md-sys-color-surface-3);
-  overflow: hidden;
-}
-.card-thumb-img {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover;
-}
-.card-thumb-placeholder {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, var(--md-sys-color-surface-3), var(--md-sys-color-surface-4));
-}
-.card-thumb-placeholder svg { width: 40px; height: 40px; opacity: .3; }
-
-.card-overlay {
-  position: absolute; inset: 0;
-  background: rgba(0,0,0,.5);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0;
-  transition: opacity var(--dur-m) var(--ease-out);
-}
-.play-btn-overlay {
-  width: 48px; height: 48px; border-radius: 50%;
-  background: var(--md-sys-color-primary);
-  display: flex; align-items: center; justify-content: center;
-  transform: scale(.8);
-  transition: transform var(--dur-m) var(--ease-spring);
-}
-.media-card:hover .play-btn-overlay { transform: scale(1); }
-
-.card-type-badge {
-  position: absolute; top: 8px; right: 8px;
-  background: rgba(0,0,0,.7);
-  backdrop-filter: blur(8px);
-  font-size: 10px; font-weight: 600;
-  padding: 3px 8px; border-radius: 6px;
-  color: var(--md-sys-color-primary);
-  text-transform: uppercase; letter-spacing: .5px;
-}
-
-.card-body { padding: var(--sp-m) var(--sp-m) var(--sp-s); }
-.card-title {
-  font-size: 13px; font-weight: 600;
-  color: var(--md-sys-color-on-surface);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin-bottom: 4px;
-}
-.card-meta {
-  font-size: 11px; color: var(--md-sys-color-on-surface-variant);
-  display: flex; align-items: center; gap: 8px;
-}
-.card-actions {
-  display: flex; gap: var(--sp-xs); padding: 0 var(--sp-m) var(--sp-m);
-}
-.icon-btn {
-  width: 32px; height: 32px; border-radius: 8px;
-  border: none; background: transparent;
-  color: var(--md-sys-color-on-surface-variant);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: all var(--dur-s) var(--ease-out);
-}
-.icon-btn:hover {
-  background: rgba(208,188,255,.12);
-  color: var(--md-sys-color-primary);
-}
-.icon-btn svg { width: 16px; height: 16px; }
-
-/* ═══════════════════════════════════════════════════
-   ADD MEDIA FORM
-═══════════════════════════════════════════════════ */
-.add-media-form {
-  background: var(--glass-bg-high);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: var(--glass-border);
-  border-radius: 20px;
-  padding: var(--sp-l);
-  box-shadow: var(--md-elevation-2);
-}
-.form-row { display: flex; gap: var(--sp-m); }
-.form-field { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.form-label {
-  font-size: 11px; font-weight: 600;
-  letter-spacing: .8px; text-transform: uppercase;
-  color: var(--md-sys-color-on-surface-variant);
-}
-.form-input {
-  background: var(--md-sys-color-surface-2);
-  border: 1px solid var(--md-sys-color-outline);
-  border-radius: 12px;
-  padding: 10px 14px;
-  color: var(--md-sys-color-on-surface);
-  font-family: inherit; font-size: 13px;
-  transition: border-color var(--dur-s) var(--ease-out);
-  outline: none;
-}
-.form-input:focus {
-  border-color: var(--md-sys-color-primary);
-  background: var(--md-sys-color-surface-3);
-}
-.form-input::placeholder { color: var(--md-sys-color-on-surface-variant); }
-
-.btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 24px; border-radius: 20px;
-  border: none; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 600;
-  transition: all var(--dur-m) var(--ease-spring);
-  user-select: none;
-}
-.btn-primary {
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
-}
-.btn-primary:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(208,188,255,.35); }
-.btn-secondary {
-  background: var(--md-sys-color-surface-3);
-  color: var(--md-sys-color-on-surface);
-  border: var(--glass-border);
-}
-.btn-secondary:hover { background: var(--md-sys-color-surface-4); }
-.btn-ghost {
-  background: transparent;
-  color: var(--md-sys-color-primary);
-  border: 1px solid var(--md-sys-color-primary);
-}
-.btn-ghost:hover { background: rgba(208,188,255,.1); }
-.btn svg { width: 16px; height: 16px; }
-
-/* ═══════════════════════════════════════════════════
-   IPTV SECTION
-═══════════════════════════════════════════════════ */
-.iptv-toolbar {
-  display: flex; align-items: center; gap: var(--sp-m);
-  margin-bottom: var(--sp-m);
-}
-.search-field {
-  flex: 1;
-  position: relative;
-}
-.search-field svg {
-  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-  width: 16px; height: 16px; color: var(--md-sys-color-on-surface-variant);
-  pointer-events: none;
-}
-.search-input {
-  width: 100%;
-  background: var(--md-sys-color-surface-2);
-  border: 1px solid var(--md-sys-color-outline);
-  border-radius: 12px;
-  padding: 10px 14px 10px 38px;
-  color: var(--md-sys-color-on-surface);
-  font-family: inherit; font-size: 13px;
-  outline: none;
-  transition: border-color var(--dur-s) var(--ease-out);
-}
-.search-input:focus {
-  border-color: var(--md-sys-color-primary);
-  background: var(--md-sys-color-surface-3);
-}
-
-.iptv-list {
-  display: flex; flex-direction: column; gap: 4px;
-  max-height: 500px; overflow-y: auto;
-  padding-right: 4px;
-}
-
-.iptv-channel {
-  display: flex; align-items: center; gap: var(--sp-m);
-  padding: 10px var(--sp-m);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all var(--dur-s) var(--ease-out);
-  border: 1px solid transparent;
-}
-.iptv-channel:hover, .iptv-channel:focus-visible {
-  background: rgba(208,188,255,.08);
-  border-color: rgba(208,188,255,.15);
-}
-.iptv-channel.live-active {
-  background: rgba(208,188,255,.12);
-  border-color: rgba(208,188,255,.25);
-}
-.channel-icon {
-  width: 36px; height: 36px; border-radius: 8px;
-  background: var(--md-sys-color-surface-3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700;
-  color: var(--md-sys-color-primary);
-  flex-shrink: 0;
-  overflow: hidden;
-}
-.channel-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
-.channel-name {
-  flex: 1; font-size: 13px; font-weight: 500;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.channel-group {
-  font-size: 11px; color: var(--md-sys-color-on-surface-variant);
-}
-.live-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #f44336; box-shadow: 0 0 8px #f44336;
-  flex-shrink: 0;
-  animation: pulse-live 2s ease infinite;
-}
-@keyframes pulse-live {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .5; transform: scale(.8); }
-}
-
-.iptv-skeleton {
-  display: flex; flex-direction: column; gap: 4px;
-}
-.skeleton-row {
-  height: 56px; border-radius: 12px;
-  background: linear-gradient(90deg, var(--md-sys-color-surface-2) 25%, var(--md-sys-color-surface-3) 50%, var(--md-sys-color-surface-2) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ═══════════════════════════════════════════════════
-   THEATER MODAL (PLAYER)
-═══════════════════════════════════════════════════ */
-#theater-modal {
-  position: fixed; inset: 0; z-index: 1000;
-  display: none;
-  background: rgba(0,0,0,.92);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  align-items: center; justify-content: center;
-  animation: modal-in var(--dur-m) var(--ease-out);
-}
-#theater-modal.open {
-  display: flex;
-}
-@keyframes modal-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.theater-shell {
-  width: min(96vw, 1200px);
-  background: #000;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 40px 120px rgba(0,0,0,.9), 0 0 0 1px rgba(208,188,255,.1);
-  display: flex; flex-direction: column;
-  animation: theater-up var(--dur-l) var(--ease-spring);
-}
-@keyframes theater-up {
-  from { transform: scale(.95) translateY(20px); opacity: 0; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
-}
-
-/* Player Viewport */
-.player-viewport {
-  position: relative;
-  width: 100%; padding-bottom: 56.25%;
-  background: #000;
-  overflow: hidden;
-}
-.player-viewport canvas,
-.player-viewport video {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: contain;
-}
-#vlc-canvas { display: none; }
-#html5-video { display: block; }
-
-/* Loading Overlay */
-.player-loading {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 16px;
-  background: rgba(0,0,0,.8);
-  z-index: 5;
-  transition: opacity var(--dur-m);
-}
-.player-loading.hidden { opacity: 0; pointer-events: none; }
-.loader-ring {
-  width: 48px; height: 48px;
-  border: 3px solid rgba(208,188,255,.2);
-  border-top-color: var(--md-sys-color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.loader-text { font-size: 13px; color: var(--md-sys-color-on-surface-variant); }
-
-/* Error Overlay */
-.player-error {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 12px;
-  background: rgba(0,0,0,.9);
-  z-index: 5;
-  opacity: 0; pointer-events: none;
-  transition: opacity var(--dur-m);
-}
-.player-error.visible { opacity: 1; pointer-events: auto; }
-.player-error svg { width: 48px; height: 48px; color: var(--md-sys-color-error); }
-.player-error-msg { font-size: 14px; color: var(--md-sys-color-on-surface-variant); text-align: center; max-width: 300px; }
-
-/* Media title overlay */
-.player-title-bar {
-  position: absolute; top: 0; left: 0; right: 0;
-  padding: 16px 20px;
-  background: linear-gradient(to bottom, rgba(0,0,0,.8) 0%, transparent 100%);
-  display: flex; align-items: center; gap: 12px;
-  z-index: 10;
-  opacity: 0;
-  transition: opacity var(--dur-m);
-}
-.player-viewport:hover .player-title-bar,
-.player-viewport:hover .custom-controls { opacity: 1; }
-.player-media-title { font-size: 16px; font-weight: 600; flex: 1; }
-.player-close-btn {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(255,255,255,.15);
-  border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: white; transition: background var(--dur-s);
-}
-.player-close-btn:hover { background: rgba(255,255,255,.25); }
-.player-close-btn svg { width: 20px; height: 20px; }
-
-/* ═══════════════════════════════════════════════════
-   CUSTOM VIDEO CONTROLS
-═══════════════════════════════════════════════════ */
-.custom-controls {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 40px 20px 16px;
-  background: linear-gradient(to top, rgba(0,0,0,.9) 0%, transparent 100%);
-  z-index: 10;
-  opacity: 0;
-  transition: opacity var(--dur-m);
-}
-
-.progress-bar {
-  width: 100%; height: 4px;
-  background: rgba(255,255,255,.2);
-  border-radius: 2px; position: relative;
-  cursor: pointer; margin-bottom: 14px;
-  transition: height var(--dur-s);
-}
-.progress-bar:hover { height: 6px; }
-.progress-fill {
-  height: 100%; border-radius: 2px;
-  background: var(--md-sys-color-primary);
-  position: relative; width: 0%;
-  transition: width .1s linear;
-}
-.progress-fill::after {
-  content: '';
-  position: absolute; right: -6px; top: 50%; transform: translateY(-50%);
-  width: 12px; height: 12px; border-radius: 50%;
-  background: var(--md-sys-color-primary);
-  opacity: 0; transition: opacity var(--dur-s);
-}
-.progress-bar:hover .progress-fill::after { opacity: 1; }
-.progress-buffered {
-  position: absolute; top: 0; left: 0; height: 100%;
-  background: rgba(255,255,255,.25); border-radius: 2px;
-  width: 0%;
-}
-
-.controls-row {
-  display: flex; align-items: center; gap: 8px;
-}
-.ctrl-btn {
-  width: 36px; height: 36px; border-radius: 8px;
-  border: none; background: transparent;
-  color: rgba(255,255,255,.9);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all var(--dur-s) var(--ease-out);
-  flex-shrink: 0;
-}
-.ctrl-btn:hover { background: rgba(255,255,255,.15); color: white; transform: scale(1.1); }
-.ctrl-btn:active { transform: scale(.95); }
-.ctrl-btn svg { width: 20px; height: 20px; }
-.ctrl-btn.play-pause svg { width: 24px; height: 24px; }
-
-.vol-group { display: flex; align-items: center; gap: 8px; }
-.vol-slider {
-  -webkit-appearance: none;
-  width: 80px; height: 4px;
-  background: rgba(255,255,255,.3);
-  border-radius: 2px; cursor: pointer;
-  outline: none;
-}
-.vol-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px; height: 12px; border-radius: 50%;
-  background: white; cursor: pointer;
-}
-
-.time-display {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px; color: rgba(255,255,255,.7);
-  margin: 0 8px;
-  flex-shrink: 0;
-}
-.ctrl-spacer { flex: 1; }
-
-/* Track Menu (Audio/Subtitles) */
-.track-menu {
-  position: absolute; bottom: 80px; right: 20px;
-  background: var(--glass-bg-high);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: var(--glass-border);
-  border-radius: 16px;
-  padding: var(--sp-s);
-  min-width: 240px;
-  box-shadow: var(--md-elevation-3);
-  z-index: 20;
-  display: none;
-}
-.track-menu.open { display: block; animation: menu-in var(--dur-m) var(--ease-spring); }
-@keyframes menu-in {
-  from { opacity: 0; transform: scale(.95) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-.track-group-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--md-sys-color-on-surface-variant);
-  padding: 8px 12px 4px;
-}
-.track-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px; border-radius: 10px;
-  cursor: pointer; font-size: 13px;
-  transition: background var(--dur-s);
-}
-.track-item:hover { background: rgba(208,188,255,.1); }
-.track-item.selected { color: var(--md-sys-color-primary); }
-.track-item svg { width: 16px; height: 16px; flex-shrink: 0; }
-.track-divider { height: 1px; background: var(--md-sys-color-outline-variant); margin: 4px 8px; }
-
-/* ═══════════════════════════════════════════════════
-   BANDWIDTH MONITOR
-═══════════════════════════════════════════════════ */
-.bandwidth-monitor {
-  background: rgba(0,0,0,.7);
-  border-top: 1px solid rgba(208,188,255,.1);
-  padding: 8px 20px;
-  display: flex; align-items: center; gap: 20px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px; color: rgba(255,255,255,.6);
-}
-.bw-stat { display: flex; align-items: center; gap: 8px; }
-.bw-label { color: rgba(255,255,255,.35); }
-.bw-value { color: var(--md-sys-color-primary); font-weight: 500; }
-.bw-bar {
-  flex: 1;
-  height: 3px; border-radius: 2px;
-  background: rgba(255,255,255,.1);
-  position: relative; overflow: hidden;
-}
-.bw-fill {
-  position: absolute; top: 0; left: 0; height: 100%;
-  background: linear-gradient(90deg, var(--md-sys-color-primary), var(--md-sys-color-tertiary));
-  border-radius: 2px; transition: width .5s ease;
-}
-.engine-badge {
-  padding: 2px 8px; border-radius: 6px;
-  background: rgba(208,188,255,.15);
-  color: var(--md-sys-color-primary);
-  font-size: 10px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .5px;
-}
-
-/* ═══════════════════════════════════════════════════
-   LOGIN MODAL
-═══════════════════════════════════════════════════ */
-#login-modal {
-  position: fixed; inset: 0; z-index: 2000;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.login-card {
-  background: var(--glass-bg-high);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: var(--glass-border);
-  border-radius: 28px;
-  padding: 40px;
-  width: min(480px, 94vw);
-  box-shadow: var(--md-elevation-3);
-  animation: modal-in var(--dur-m) var(--ease-spring);
-  text-align: center;
-}
-.login-logo {
-  width: 72px; height: 72px; border-radius: 20px;
-  background: linear-gradient(135deg, var(--md-sys-color-primary-container), rgba(79,55,139,.6));
-  margin: 0 auto var(--sp-l);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 8px 32px rgba(208,188,255,.2);
-}
-.login-logo svg { width: 40px; height: 40px; color: var(--md-sys-color-primary); }
-.login-title { font-size: 24px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 8px; }
-.login-sub { font-size: 13px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 32px; }
-.login-form { display: flex; flex-direction: column; gap: var(--sp-m); text-align: left; }
-.login-divider {
-  display: flex; align-items: center; gap: 12px;
-  color: var(--md-sys-color-on-surface-variant); font-size: 12px;
-  margin: 8px 0;
-}
-.login-divider::before, .login-divider::after {
-  content: ''; flex: 1; height: 1px;
-  background: var(--md-sys-color-outline-variant);
-}
-.btn-full { width: 100%; justify-content: center; padding: 14px; border-radius: 14px; }
-
-/* ═══════════════════════════════════════════════════
-   NOTIFICATIONS TOAST
-═══════════════════════════════════════════════════ */
-#toast-container {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  z-index: 3000; display: flex; flex-direction: column; gap: 8px;
-  pointer-events: none; align-items: center;
-}
-.toast {
-  background: var(--md-sys-color-surface-4);
-  border: var(--glass-border);
-  border-radius: 12px;
-  padding: 10px 20px;
-  font-size: 13px; font-weight: 500;
-  color: var(--md-sys-color-on-surface);
-  box-shadow: var(--md-elevation-2);
-  backdrop-filter: blur(12px);
-  animation: toast-in var(--dur-m) var(--ease-spring) forwards;
-  display: flex; align-items: center; gap: 8px;
-}
-.toast.error { border-color: rgba(242,184,184,.3); color: var(--md-sys-color-error); }
-.toast.success { border-color: rgba(76,175,80,.3); color: #81c784; }
-.toast svg { width: 16px; height: 16px; }
-@keyframes toast-in {
-  from { opacity: 0; transform: translateY(16px) scale(.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes toast-out {
-  from { opacity: 1; transform: translateY(0) scale(1); }
-  to { opacity: 0; transform: translateY(-8px) scale(.95); }
-}
-
-/* ═══════════════════════════════════════════════════
-   SECTION PAGES (show/hide)
-═══════════════════════════════════════════════════ */
-.page { display: none; flex-direction: column; gap: var(--sp-l); animation: page-in var(--dur-m) var(--ease-out); }
-.page.active { display: flex; }
-@keyframes page-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ═══════════════════════════════════════════════════
-   STATUS ROW
-═══════════════════════════════════════════════════ */
-.status-row {
-  display: flex; gap: var(--sp-m); flex-wrap: wrap;
-}
-.status-card {
-  flex: 1; min-width: 140px;
-  background: var(--glass-bg);
-  border: var(--glass-border);
-  border-radius: 16px;
-  padding: var(--sp-m);
-  display: flex; flex-direction: column; gap: 4px;
-}
-.status-card .label { font-size: 11px; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: .8px; }
-.status-card .value { font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--md-sys-color-primary); }
-.status-card .sub-label { font-size: 11px; color: var(--md-sys-color-on-surface-variant); }
-
-/* ═══════════════════════════════════════════════════
-   EMPTY STATE
-═══════════════════════════════════════════════════ */
-.empty-state {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 12px; padding: 60px 20px; text-align: center;
-}
-.empty-state svg { width: 64px; height: 64px; opacity: .25; }
-.empty-state p { color: var(--md-sys-color-on-surface-variant); font-size: 13px; }
-
-/* ═══════════════════════════════════════════════════
-   RESPONSIVE / TV DPAD
-═══════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  #app {
-    grid-template-columns: 1fr;
-    grid-template-rows: 56px 1fr 64px;
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #070709;
+    color: #e8e8f0;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  .nav-rail {
-    grid-row: 3; grid-column: 1;
-    flex-direction: row;
-    overflow-x: auto; overflow-y: hidden;
-    border-right: none;
-    border-top: var(--glass-border);
-    padding: 8px;
-    justify-content: space-around;
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2c2c3d; border-radius: 2px; }
+
+  .glass {
+    background: rgba(19, 19, 26, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.06);
   }
-  .nav-label, .nav-badge, .nav-item span { display: none; }
-  .nav-item { padding: var(--sp-s); justify-content: center; }
-  .form-row { flex-direction: column; }
-}
 
-@media (min-width: 1600px) {
-  .media-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-  
-  /* ═══════════════════════════════════════════════════
-   QUICK PLAY BAR
-═══════════════════════════════════════════════════ */
-.quickplay-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-m);
-  background: var(--glass-bg-high);
-  border: 1px solid rgba(208, 188, 255, 0.25);
-  border-radius: 18px;
-  padding: 10px 16px;
-  box-shadow:
-    var(--md-elevation-2),
-    0 0 0 1px rgba(208,188,255,0.06),
-    inset 0 1px 0 rgba(255,255,255,0.04);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  transition: border-color var(--dur-m) var(--ease-out),
-              box-shadow var(--dur-m) var(--ease-out);
-  margin-bottom: 4px;
-}
-.quickplay-bar:focus-within {
-  border-color: rgba(208, 188, 255, 0.55);
-  box-shadow:
-    var(--md-elevation-2),
-    0 0 0 3px rgba(208,188,255,0.12);
-}
-.qp-icon {
-  color: var(--md-sys-color-primary);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-.qp-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--md-sys-color-on-surface);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12.5px;
-  letter-spacing: -.2px;
-}
-.qp-input::placeholder {
-  color: var(--md-sys-color-on-surface-variant);
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 13px;
-  letter-spacing: 0;
-}
-.qp-type-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .8px;
-  text-transform: uppercase;
-  background: var(--md-sys-color-surface-3);
-  color: var(--md-sys-color-on-surface-variant);
-  border: 1px solid var(--md-sys-color-outline-variant);
-  transition: all var(--dur-s) var(--ease-out);
-  flex-shrink: 0;
-  min-width: 54px;
-  text-align: center;
-}
-.qp-type-badge.mkv  { background: rgba(79,55,139,.35); color: var(--md-sys-color-primary); border-color: rgba(208,188,255,.3); }
-.qp-type-badge.mp4  { background: rgba(239,184,200,.15); color: var(--md-sys-color-tertiary); border-color: rgba(239,184,200,.3); }
-.qp-type-badge.hls  { background: rgba(76,175,80,.15); color: #81c784; border-color: rgba(76,175,80,.3); }
-.qp-type-badge.live { background: rgba(244,67,54,.15); color: #ef9a9a; border-color: rgba(244,67,54,.3); }
+  .glass-light {
+    background: rgba(34, 34, 47, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
 
-.qp-hints {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-l);
-  flex-wrap: wrap;
-  padding: 2px 4px;
-}
-.qp-hint {
-  font-size: 11px;
-  color: var(--md-sys-color-on-surface-variant);
-  opacity: .7;
-}
+  .msg-bubble-out {
+    background: linear-gradient(135deg, #6c57ff 0%, #8b5cf6 100%);
+    box-shadow: 0 4px 20px rgba(108, 87, 255, 0.3);
+  }
 
-/* Progress bar shown inside the quickplay bar when loading */
-.qp-progress {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 2px;
-  border-radius: 0 0 18px 18px;
-  overflow: hidden;
-  display: none;
-}
-.qp-progress.active { display: block; }
-.qp-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--md-sys-color-primary), var(--md-sys-color-tertiary));
-  border-radius: 2px;
-  animation: qp-scan 1.4s ease-in-out infinite;
-}
-@keyframes qp-scan {
-  0%   { width: 0%;   margin-left: 0%; }
-  50%  { width: 60%;  margin-left: 20%; }
-  100% { width: 0%;   margin-left: 100%; }
-}
-}
+  .msg-bubble-in {
+    background: #1a1a24;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .glow-ring {
+    box-shadow: 0 0 0 2px #6c57ff, 0 0 20px rgba(108, 87, 255, 0.4);
+  }
+
+  .noise-bg::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .gradient-mesh {
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 10% 20%, rgba(108, 87, 255, 0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 80%, rgba(45, 212, 191, 0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 50% 50%, rgba(139, 92, 246, 0.03) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #messages-container {
+    scroll-behavior: smooth;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); }
+
+  textarea { resize: none; }
+  textarea:focus { outline: none; }
+
+  .input-area {
+    background: rgba(26, 26, 36, 0.9);
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-area:focus-within {
+    border-color: rgba(108, 87, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(108, 87, 255, 0.1);
+  }
+
+  .btn-icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 10px;
+    transition: background 0.15s, transform 0.1s;
+    color: #7a7a9a;
+    cursor: pointer;
+    border: none; background: transparent;
+  }
+  .btn-icon:hover { background: rgba(255,255,255,0.07); color: #c8c8e0; }
+  .btn-icon:active { transform: scale(0.92); }
+
+  .btn-send {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, #6c57ff, #8b5cf6);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 15px rgba(108, 87, 255, 0.4);
+    flex-shrink: 0;
+  }
+  .btn-send:hover { opacity: 0.9; transform: scale(1.05); }
+  .btn-send:active { transform: scale(0.95); }
+  .btn-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .mic-active {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2) !important;
+    color: white !important;
+  }
+
+  .file-drop-zone {
+    border: 2px dashed rgba(108, 87, 255, 0.3);
+    border-radius: 16px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .file-drop-zone.drag-over {
+    border-color: #6c57ff;
+    background: rgba(108, 87, 255, 0.08);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    max-width: calc(100vw - 32px);
+    width: max-content;
+  }
+
+  .msg-action-btn {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .message-wrapper:hover .msg-action-btn { opacity: 1; }
+
+  .share-panel {
+    transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s;
+    max-height: 0; overflow: hidden; opacity: 0;
+  }
+  .share-panel.open { max-height: 300px; opacity: 1; }
+
+  .modal-overlay {
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+  }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 500;
+    background: rgba(108, 87, 255, 0.15);
+    border: 1px solid rgba(108, 87, 255, 0.3);
+    color: #a899ff;
+  }
+
+  .encrypt-badge {
+    background: rgba(45, 212, 191, 0.1);
+    border: 1px solid rgba(45, 212, 191, 0.25);
+    color: #2dd4bf;
+  }
+
+  img.msg-image { max-height: 280px; width: auto; max-width: 100%; object-fit: cover; border-radius: 12px; }
+
+  .typing-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #7a7a9a;
+    animation: pulseDot 1.4s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 </style>
 </head>
+<body class="dark noise-bg">
+<div class="gradient-mesh"></div>
 
-<body>
-<div class="bg-canvas"></div>
+<!-- TOAST CONTAINER -->
+<div id="toast-container" class="toast pointer-events-none" style="z-index:9999;"></div>
 
-<!-- ═══════════════════════════════════════════════════
-     APP SHELL
-═══════════════════════════════════════════════════ -->
-<div id="app">
-
-  <!-- TOP BAR -->
-  <header class="top-bar">
-    <div class="app-logo">
-      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="28" height="28" rx="8" fill="#4F378B"/>
-        <path d="M6 10a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8z" stroke="#D0BCFF" stroke-width="1.5"/>
-        <path d="M11 12l5 2-5 2v-4z" fill="#D0BCFF"/>
-        <circle cx="22" cy="7" r="3" fill="#EFB8C8"/>
-      </svg>
-      <span>Cinema<span style="color:var(--md-sys-color-tertiary);font-weight:300">&amp;IPTV</span></span>
+<!-- CONFIRM MODAL -->
+<div id="confirm-modal" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 hidden animate-fade-in p-4">
+  <div class="glass rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-slide-up">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      </div>
+      <div>
+        <h3 id="modal-title" class="font-semibold text-white text-base">Delete Conversation?</h3>
+        <p id="modal-sub" class="text-xs text-gray-400 mt-0.5">This action cannot be undone.</p>
+      </div>
     </div>
-    <div class="top-bar-divider"></div>
-    <div class="top-bar-actions">
-      <div class="chip" id="engine-status-chip">
-        <div class="dot"></div>
-        <span id="engine-label">HLS Engine</span>
+    <p id="modal-body" class="text-sm text-gray-300 mb-5 leading-relaxed">All messages will be permanently deleted from the database. The encryption key will remain in your URL.</p>
+    <div class="flex gap-3">
+      <button id="modal-cancel" class="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-300 glass-light hover:bg-white/10 transition-all">Cancel</button>
+      <button id="modal-confirm" class="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500/90 hover:bg-red-500 text-white transition-all">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div id="share-modal" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 hidden animate-fade-in p-4">
+  <div class="glass rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-slide-up">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-white text-base">Invite to Chat</h3>
+      <button id="close-share-modal" class="btn-icon"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <p class="text-xs text-gray-400 mb-3 leading-relaxed">Share this URL. The encryption key is embedded — only people with this exact link can decrypt messages.</p>
+    <div class="glass-light rounded-xl p-3 mb-4 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      <span id="share-url-text" class="text-xs font-mono text-gray-300 break-all flex-1"></span>
+    </div>
+    <button id="copy-share-url" class="w-full py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-accent-500 to-purple-600 text-white transition-all hover:opacity-90 active:scale-95">
+      Copy Encrypted Link
+    </button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="relative z-10 flex flex-col h-screen max-w-2xl mx-auto">
+
+  <!-- HEADER -->
+  <header class="glass flex items-center gap-3 px-4 py-3 flex-shrink-0 border-b border-white/5">
+    <div class="relative">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-400 to-purple-600 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
       </div>
-      <div class="chip" id="mode-chip">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span id="mode-label">Guest</span>
+      <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-teal-400 rounded-full border-2 border-surface-950"></div>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="font-semibold text-white text-sm tracking-tight">CipherChat</h1>
+      <div class="flex items-center gap-1.5 mt-0.5">
+        <span class="chip encrypt-badge text-xs">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          E2EE · AES-GCM
+        </span>
+        <span id="room-id-badge" class="chip text-xs truncate max-w-[100px] hidden"></span>
       </div>
-      <div id="user-badge" onclick="showLoginModal()">
-        <div class="avatar" id="user-avatar">G</div>
-        <span id="user-name">Guest Mode</span>
-      </div>
+    </div>
+    <div class="flex items-center gap-1">
+      <button id="btn-share" class="btn-icon" title="Invite">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+      </button>
+      <button id="btn-nuke" class="btn-icon" title="Delete Conversation" style="color:#f87171;">
+        <svg xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      </button>
     </div>
   </header>
 
-  <!-- NAV RAIL -->
-  <nav class="nav-rail" id="nav-rail" role="navigation">
-    <div class="nav-label">Library</div>
-    <div class="nav-item active" data-page="library" tabindex="0" role="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="6" rx="1"/><rect x="2" y="13" width="6" height="6" rx="1"/><rect x="10" y="3" width="6" height="6" rx="1"/><rect x="18" y="3" width="4" height="6" rx="1"/><rect x="10" y="13" width="12" height="6" rx="1"/></svg>
-      <span>My Library</span>
-      <span class="nav-badge" id="lib-count">0</span>
+  <!-- MESSAGES -->
+  <div id="messages-container" class="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
+    <!-- Placeholder -->
+    <div id="empty-state" class="flex flex-col items-center justify-center h-full gap-4 animate-fade-in">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-400/20 to-purple-600/20 border border-accent-400/20 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      </div>
+      <div class="text-center">
+        <p class="text-white font-semibold text-base">Encrypted & Ready</p>
+        <p class="text-gray-500 text-xs mt-1 leading-relaxed max-w-[220px]">Messages are encrypted in your browser. Share the link to invite someone.</p>
+      </div>
+      <button id="empty-share-btn" class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-accent-500 to-purple-600 hover:opacity-90 transition-all active:scale-95">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+        Copy Invite Link
+      </button>
     </div>
-    <div class="nav-item" data-page="live-tv" tabindex="0" role="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 2l-4 5-4-5"/></svg>
-      <span>Live TV</span>
-      <span class="nav-badge" id="iptv-count">0</span>
-    </div>
-    <div class="nav-divider"></div>
-    <div class="nav-label">Tools</div>
-    <div class="nav-item" data-page="add-media" tabindex="0" role="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
-      <span>Add Media</span>
-    </div>
-    <div class="nav-item" data-page="settings" tabindex="0" role="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      <span>Settings</span>
-    </div>
-  </nav>
-
-  <!-- MAIN CONTENT -->
-  <main class="main-content">
-
-    <!-- ── LIBRARY PAGE ── -->
-    <section class="page active" id="page-library">
-	
-	<!-- ── QUICK PLAY BAR ── -->
-<div class="quickplay-bar" id="quickplay-bar">
-  <div class="qp-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="17 8 12 3 7 8"/>
-      <line x1="12" y1="3" x2="12" y2="15"/>
-    </svg>
+    <!-- Messages injected here -->
   </div>
-  <input
-    id="quickplay-input"
-    class="qp-input"
-    type="text"
-    placeholder="Paste any MKV / MP4 / M3U8 link and hit Enter to stream instantly…"
-    autocomplete="off"
-    spellcheck="false"
-    onpaste="handleQuickPaste(event)"
-    onkeydown="handleQuickKey(event)"
-  >
-  <div class="qp-type-badge" id="qp-type-badge">—</div>
-  <button class="btn btn-primary" onclick="quickPlay()" style="flex-shrink:0;border-radius:12px;padding:10px 20px">
-    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M5 3l14 9-14 9V3z"/></svg>
-    Stream
-  </button>
-</div>
-<div class="qp-hints" id="qp-hints">
-  <span class="qp-hint">✦ MKV → byte-range chunked (1 MB/chunk)</span>
-  <span class="qp-hint">✦ M3U8 → HLS.js 5-second buffer</span>
-  <span class="qp-hint">✦ Signed R2 / S3 URLs supported</span>
-  <span class="qp-hint">✦ No login required</span>
-</div>
 
+  <!-- EMOJI PICKER -->
+  <div id="emoji-picker" class="hidden glass border-b border-white/5 flex-shrink-0 animate-slide-up">
+    <div class="p-3 max-h-44 overflow-y-auto">
+      <div class="emoji-grid gap-1" id="emoji-grid"></div>
+    </div>
+  </div>
 
-      <div class="section-header">
-        <div class="section-accent"></div>
-        <h2 class="section-title">My Library</h2>
-        <span class="section-sub" id="lib-subtitle">0 items</span>
-      </div>
-      <div class="status-row" id="library-stats">
-        <div class="status-card">
-          <div class="label">Total Files</div>
-          <div class="value" id="stat-total">0</div>
-          <div class="sub-label">Media items</div>
-        </div>
-        <div class="status-card">
-          <div class="label">Data Saved</div>
-          <div class="value" id="stat-data">0 MB</div>
-          <div class="sub-label">Total consumed</div>
-        </div>
-        <div class="status-card">
-          <div class="label">Backend</div>
-          <div class="value" id="stat-backend" style="font-size:14px">—</div>
-          <div class="sub-label" id="stat-backend-sub">Not configured</div>
-        </div>
-      </div>
-      <div class="media-grid" id="media-grid">
-        <!-- Cards injected by JS -->
-      </div>
-      <div class="empty-state" id="library-empty" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        <p>Your library is empty. Add media or go to Live TV.</p>
-      </div>
-    </section>
+  <!-- FILE PREVIEW BAR -->
+  <div id="file-preview-bar" class="hidden glass border-b border-white/5 px-4 py-2.5 flex items-center gap-3 flex-shrink-0 animate-slide-up">
+    <div id="file-preview-thumb" class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-surface-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p id="file-preview-name" class="text-sm font-medium text-white truncate"></p>
+      <p id="file-preview-size" class="text-xs text-gray-400"></p>
+    </div>
+    <button id="btn-cancel-file" class="btn-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
 
-    <!-- ── LIVE TV PAGE ── -->
-    <section class="page" id="page-live-tv">
-      <div class="section-header">
-        <div class="section-accent" style="background:#f44336"></div>
-        <h2 class="section-title">Live TV</h2>
-        <span class="section-sub" id="iptv-subtitle">Loading…</span>
-      </div>
-      <div class="iptv-toolbar">
-        <div class="search-field">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input class="search-input" id="iptv-search" type="text" placeholder="Search channels…" oninput="filterIPTV(this.value)">
-        </div>
-        <button class="btn btn-secondary" onclick="loadIPTV()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5A10 10 0 0 1 20.8 8M22 12.5A10 10 0 0 1 3.2 16"/></svg>
-          Refresh
+  <!-- INPUT AREA -->
+  <div class="glass border-t border-white/5 px-3 py-3 flex-shrink-0">
+    <div class="input-area rounded-2xl px-3 py-2.5 flex flex-col gap-2">
+      <textarea id="msg-input"
+        rows="1"
+        placeholder="Type an encrypted message…"
+        class="w-full bg-transparent text-sm text-white placeholder-gray-500 leading-relaxed max-h-28 overflow-y-auto py-0.5"
+        style="field-sizing: content; min-height: 22px;"
+      ></textarea>
+      <div class="flex items-center gap-1">
+        <button id="btn-emoji" class="btn-icon" title="Emoji">
+          <svg xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </button>
-        <select class="form-input" id="iptv-group-filter" onchange="filterIPTV()" style="width:auto;min-width:140px">
-          <option value="">All Groups</option>
-        </select>
-      </div>
-      <div id="iptv-skeleton" class="iptv-skeleton">
-        <div class="skeleton-row"></div><div class="skeleton-row"></div>
-        <div class="skeleton-row"></div><div class="skeleton-row"></div>
-        <div class="skeleton-row"></div><div class="skeleton-row"></div>
-      </div>
-      <div class="iptv-list" id="iptv-list"></div>
-    </section>
-
-    <!-- ── ADD MEDIA PAGE ── -->
-    <section class="page" id="page-add-media">
-      <div class="section-header">
-        <div class="section-accent" style="background:var(--md-sys-color-tertiary)"></div>
-        <h2 class="section-title">Add Media</h2>
-      </div>
-      <div class="add-media-form">
-        <div class="form-row" style="margin-bottom:var(--sp-m)">
-          <div class="form-field">
-            <label class="form-label">Media Title</label>
-            <input class="form-input" id="inp-title" placeholder="My Movie / Stream Name…">
-          </div>
-          <div class="form-field" style="max-width:160px">
-            <label class="form-label">Type</label>
-            <select class="form-input" id="inp-type">
-              <option value="mkv">MKV / Local</option>
-              <option value="mp4">MP4</option>
-              <option value="hls">HLS / m3u8</option>
-              <option value="live">Live RTSP</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row" style="margin-bottom:var(--sp-m)">
-          <div class="form-field">
-            <label class="form-label">Stream URL</label>
-            <input class="form-input" id="inp-url" placeholder="https://… or rtsp://…">
-          </div>
-        </div>
-        <div class="form-row" style="margin-bottom:var(--sp-m)">
-          <div class="form-field">
-            <label class="form-label">Subtitle URL (.srt / .vtt) — optional</label>
-            <input class="form-input" id="inp-sub" placeholder="https://…/subtitles.srt">
-          </div>
-          <div class="form-field" style="max-width:200px">
-            <label class="form-label">Google Apps Script URL</label>
-            <input class="form-input" id="inp-gas" placeholder="https://script.google.com/…">
-          </div>
-        </div>
-        <div class="form-row" style="gap:var(--sp-s)">
-          <button class="btn btn-primary" onclick="addMedia()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            Add to Library
-          </button>
-          <button class="btn btn-secondary" onclick="syncFromSheets()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5A10 10 0 0 1 20.8 8M22 12.5A10 10 0 0 1 3.2 16"/></svg>
-            Sync from Sheets
-          </button>
-          <button class="btn btn-ghost" onclick="loadDefaults()">
-            Load Test Files
-          </button>
-        </div>
-      </div>
-
-      <div class="section-header" style="margin-top:8px">
-        <h2 class="section-title" style="font-size:16px">Engine Info</h2>
-      </div>
-      <div class="status-row">
-        <div class="status-card">
-          <div class="label">VLC.js WASM</div>
-          <div class="value" id="vlc-status" style="font-size:13px;color:var(--md-sys-color-error)">Not loaded</div>
-          <div class="sub-label">Multi-thread WASM engine</div>
-        </div>
-        <div class="status-card">
-          <div class="label">SharedArrayBuffer</div>
-          <div class="value" id="sab-status" style="font-size:13px">—</div>
-          <div class="sub-label">Required for VLC WASM</div>
-        </div>
-        <div class="status-card">
-          <div class="label">HLS.js Fallback</div>
-          <div class="value" id="hls-status" style="font-size:13px;color:#81c784">Ready</div>
-          <div class="sub-label">Adaptive bitrate streaming</div>
-        </div>
-        <div class="status-card">
-          <div class="label">MSE + Byte-Range</div>
-          <div class="value" id="mse-status" style="font-size:13px">—</div>
-          <div class="sub-label">Chunked MKV streaming</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── SETTINGS PAGE ── -->
-    <section class="page" id="page-settings">
-      <div class="section-header">
-        <div class="section-accent"></div>
-        <h2 class="section-title">Settings</h2>
-      </div>
-      <div class="add-media-form">
-        <div class="form-row" style="margin-bottom:var(--sp-m)">
-          <div class="form-field">
-            <label class="form-label">Google Apps Script URL</label>
-            <input class="form-input" id="set-gas-url" placeholder="Leave blank for Guest Mode">
-          </div>
-        </div>
-        <div class="form-row" style="margin-bottom:var(--sp-m)">
-          <div class="form-field">
-            <label class="form-label">CORS Proxy Override</label>
-            <input class="form-input" id="set-cors-proxy" value="https://corsproxy.io/?">
-          </div>
-          <div class="form-field">
-            <label class="form-label">HLS Buffer (seconds)</label>
-            <input class="form-input" id="set-hls-buffer" type="number" value="5" min="2" max="30">
-          </div>
-        </div>
-        <div class="form-row">
-          <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
-          <button class="btn btn-secondary" onclick="clearAllData()">Clear All Data</button>
-        </div>
-      </div>
-    </section>
-
-  </main><!-- /main-content -->
-</div><!-- /app -->
-
-<!-- ═══════════════════════════════════════════════════
-     THEATER MODAL
-═══════════════════════════════════════════════════ -->
-<div id="theater-modal" role="dialog" aria-modal="true" aria-label="Video Player">
-  <div class="theater-shell">
-
-    <!-- Player Viewport -->
-    <div class="player-viewport" id="player-viewport"
-         onmouseenter="showControls()" onmouseleave="hideControls()">
-      <!-- VLC WASM Canvas (primary when available) -->
-      <canvas id="vlc-canvas" tabindex="-1"></canvas>
-      <!-- HTML5 Video Fallback -->
-      <video id="html5-video" tabindex="-1" crossorigin="anonymous"
-             onloadeddata="onVideoLoaded()" onerror="onVideoError()"
-             ontimeupdate="onTimeUpdate()" onprogress="onBufferUpdate()"
-             onwaiting="showLoader()" onplaying="hideLoader()"></video>
-
-      <!-- Title Bar -->
-      <div class="player-title-bar" id="player-title-bar">
-        <span class="player-media-title" id="now-playing-title">—</span>
-        <button class="player-close-btn" onclick="closeTheater()" aria-label="Close">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        <label id="btn-file" class="btn-icon cursor-pointer" title="Attach File">
+          <svg xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+          <input type="file" id="file-input" class="hidden" accept="*/*" />
+        </label>
+        <button id="btn-mic" class="btn-icon" title="Voice Input">
+          <svg xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+        </button>
+        <div class="flex-1"></div>
+        <span id="char-count" class="text-xs text-gray-600 font-mono mr-1 hidden"></span>
+        <button id="btn-send" class="btn-send" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="transform:rotate(45deg) translateX(-1px)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
         </button>
       </div>
+    </div>
+  </div>
 
-      <!-- Loading overlay -->
-      <div class="player-loading" id="player-loading">
-        <div class="loader-ring"></div>
-        <div class="loader-text" id="loader-msg">Initializing engine…</div>
-      </div>
+</div><!-- /main app -->
 
-      <!-- Error overlay -->
-      <div class="player-error" id="player-error">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-        <div class="player-error-msg" id="player-error-msg">Stream unavailable. The source may be offline or blocked.</div>
-        <button class="btn btn-secondary" onclick="retryPlayback()">Retry</button>
-      </div>
+<script type="module">
+// ─── FIREBASE IMPORTS ───────────────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, deleteDoc, doc,
+  onSnapshot, query, orderBy, serverTimestamp, getDocs, writeBatch
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
-      <!-- Custom Controls -->
-      <div class="custom-controls" id="custom-controls">
-        <div class="progress-bar" id="progress-bar" onclick="seekTo(event)" onmousemove="seekPreview(event)">
-          <div class="progress-buffered" id="progress-buffered"></div>
-          <div class="progress-fill" id="progress-fill"></div>
-        </div>
-        <div class="controls-row">
-          <button class="ctrl-btn" onclick="skipBack()" title="−10s">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
-          </button>
-          <button class="ctrl-btn play-pause" id="play-pause-btn" onclick="togglePlayPause()" title="Play/Pause">
-            <svg id="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
-            <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zM14 19h4V5h-4v14z"/></svg>
-          </button>
-          <button class="ctrl-btn" onclick="skipForward()" title="+10s">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-.48-4"/></svg>
-          </button>
-          <div class="vol-group">
-            <button class="ctrl-btn" onclick="toggleMute()" id="mute-btn" title="Mute">
-              <svg id="icon-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-              <svg id="icon-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+// ─── FIREBASE INIT ──────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyA5rCtILh3LmIy9BwQV8IVtHBeshlog1jI",
+  authDomain: "quickchatapp-57890.firebaseapp.com",
+  projectId: "quickchatapp-57890",
+  storageBucket: "quickchatapp-57890.firebasestorage.app",
+  messagingSenderId: "732242608209",
+  appId: "1:732242608209:web:d38008e8a4453a6d16b870"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ─── CRYPTO UTILITIES ───────────────────────────────────────────────────────
+const Crypto = (() => {
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+
+  const importKey = async (rawKeyHex) => {
+    const raw = hexToBytes(rawKeyHex);
+    return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+  };
+
+  const encrypt = async (plaintext, key) => {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plaintext));
+    const combined = new Uint8Array(iv.byteLength + ct.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(ct), iv.byteLength);
+    return bytesToBase64(combined);
+  };
+
+  const decrypt = async (ciphertext, key) => {
+    const combined = base64ToBytes(ciphertext);
+    const iv = combined.slice(0, 12);
+    const ct = combined.slice(12);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+    return dec.decode(pt);
+  };
+
+  const generateKey = () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    return bytesToHex(bytes);
+  };
+
+  const bytesToHex = (b) => Array.from(b).map(x => x.toString(16).padStart(2,'0')).join('');
+  const hexToBytes = (h) => new Uint8Array(h.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+  const bytesToBase64 = (b) => btoa(String.fromCharCode(...b));
+  const base64ToBytes = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+  return { encrypt, decrypt, generateKey, importKey };
+})();
+
+// ─── RANDOM ROOM ID ──────────────────────────────────────────────────────────
+const generateRoomId = () => {
+  const arr = crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(arr).map(b => b.toString(36)).join('').slice(0, 12);
+};
+
+// ─── SESSION STATE ───────────────────────────────────────────────────────────
+let roomId = null;
+let cryptoKey = null;
+let rawKeyHex = null;
+let unsubscribe = null;
+let pendingFile = null;
+let sentMessageIds = new Set();
+const LOCAL_SENDER_ID = (() => {
+  let id = sessionStorage.getItem('_cid');
+  if (!id) { id = Math.random().toString(36).slice(2, 10); sessionStorage.setItem('_cid', id); }
+  return id;
+})();
+
+// ─── INIT: PARSE HASH ────────────────────────────────────────────────────────
+async function initSession() {
+  const hash = window.location.hash.replace('#', '');
+  const parts = hash.split(':');
+
+  if (parts.length >= 2 && parts[0].length > 3 && parts[1].length > 10) {
+    // Existing session
+    roomId = parts[0];
+    rawKeyHex = parts.slice(1).join(':'); // key might have colons from hex
+  } else {
+    // New session
+    roomId = generateRoomId();
+    rawKeyHex = Crypto.generateKey();
+    window.location.hash = `${roomId}:${rawKeyHex}`;
+  }
+
+  try {
+    cryptoKey = await Crypto.importKey(rawKeyHex);
+  } catch(e) {
+    showToast('⚠️ Invalid encryption key in URL', 'error');
+    return;
+  }
+
+  document.getElementById('room-id-badge').textContent = `#${roomId}`;
+  document.getElementById('room-id-badge').classList.remove('hidden');
+  document.getElementById('share-url-text').textContent = window.location.href;
+
+  subscribeMessages();
+}
+
+// ─── FIRESTORE LISTENER ──────────────────────────────────────────────────────
+function subscribeMessages() {
+  const msgsRef = collection(db, 'rooms', roomId, 'messages');
+  const q = query(msgsRef, orderBy('ts', 'asc'));
+
+  if (unsubscribe) unsubscribe();
+
+  unsubscribe = onSnapshot(q, async (snapshot) => {
+    for (const change of snapshot.docChanges()) {
+      if (change.type === 'added') {
+        await renderMessage(change.doc);
+      } else if (change.type === 'removed') {
+        const el = document.getElementById(`msg-${change.doc.id}`);
+        if (el) {
+          el.style.transition = 'opacity 0.2s, transform 0.2s';
+          el.style.opacity = '0';
+          el.style.transform = 'scale(0.95)';
+          setTimeout(() => el?.remove(), 220);
+        }
+      }
+    }
+    const empty = document.getElementById('empty-state');
+    if (snapshot.size > 0 && empty) {
+      empty.style.display = 'none';
+    } else if (snapshot.size === 0 && empty) {
+      empty.style.display = '';
+    }
+    scrollToBottom();
+  });
+}
+
+// ─── RENDER MESSAGE ──────────────────────────────────────────────────────────
+async function renderMessage(docSnap) {
+  if (document.getElementById(`msg-${docSnap.id}`)) return;
+  const data = docSnap.data();
+  const isMine = data.sender === LOCAL_SENDER_ID;
+
+  let text = null, fileName = null, fileMime = null, fileData = null;
+
+  try {
+    if (data.text) text = await Crypto.decrypt(data.text, cryptoKey);
+    if (data.fileName) fileName = await Crypto.decrypt(data.fileName, cryptoKey);
+    if (data.fileMime) fileMime = await Crypto.decrypt(data.fileMime, cryptoKey);
+    if (data.fileData) fileData = await Crypto.decrypt(data.fileData, cryptoKey);
+  } catch(e) {
+    text = '[Decryption failed — wrong key?]';
+  }
+
+  const container = document.getElementById('messages-container');
+  const wrapper = document.createElement('div');
+  wrapper.id = `msg-${docSnap.id}`;
+  wrapper.className = `message-wrapper flex ${isMine ? 'justify-end' : 'justify-start'} animate-slide-up mb-1.5`;
+
+  const timeStr = data.ts?.toDate ? new Intl.DateTimeFormat([], {hour:'2-digit',minute:'2-digit'}).format(data.ts.toDate()) : '';
+
+  let bubble = '';
+
+  // File rendering
+  if (fileData && fileName) {
+    const isImage = fileMime && fileMime.startsWith('image/');
+    const dataUrl = `data:${fileMime};base64,${fileData.split(',')[1] || fileData.replace(/^data:[^;]+;base64,/, '')}`;
+
+    if (isImage) {
+      bubble = `
+        <div class="${isMine ? 'msg-bubble-out' : 'msg-bubble-in'} rounded-2xl ${isMine ? 'rounded-tr-md' : 'rounded-tl-md'} overflow-hidden max-w-[260px]">
+          <div class="relative group">
+            <img src="${escHtml(dataUrl)}" alt="${escHtml(fileName)}" class="msg-image block" />
+            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2">
+              <span class="text-white text-xs font-medium truncate max-w-[130px]">${escHtml(fileName)}</span>
+              <button onclick="downloadFile('${encodeURIComponent(dataUrl)}', '${encodeURIComponent(fileName)}')"
+                class="w-7 h-7 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="px-3 py-1.5 flex items-center justify-end gap-1.5">
+            <span class="text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">${timeStr}</span>
+          </div>
+        </div>`;
+    } else {
+      bubble = `
+        <div class="${isMine ? 'msg-bubble-out' : 'msg-bubble-in'} rounded-2xl ${isMine ? 'rounded-tr-md' : 'rounded-tl-md'} px-3 py-2.5 max-w-[260px]">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-lg ${isMine ? 'bg-white/20' : 'bg-surface-600'} flex items-center justify-center flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 ${isMine ? 'text-white' : 'text-accent-400'}" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-medium ${isMine ? 'text-white' : 'text-gray-200'} truncate">${escHtml(fileName)}</p>
+              <p class="text-xs ${isMine ? 'text-white/50' : 'text-gray-500'} mt-0.5">${escHtml(fileMime || 'File')}</p>
+            </div>
+            <button onclick="downloadFile('${encodeURIComponent(dataUrl)}', '${encodeURIComponent(fileName)}')"
+              class="w-7 h-7 rounded-lg ${isMine ? 'bg-white/20 hover:bg-white/30' : 'bg-surface-500 hover:bg-surface-400'} flex items-center justify-center transition-all flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 ${isMine ? 'text-white' : 'text-gray-300'}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             </button>
-            <input class="vol-slider" id="vol-slider" type="range" min="0" max="100" value="100"
-                   oninput="setVolume(this.value)">
           </div>
-          <span class="time-display" id="time-display">0:00 / 0:00</span>
-          <div class="ctrl-spacer"></div>
-          <button class="ctrl-btn" onclick="toggleTracks()" title="Audio & Subtitles" id="track-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="4" rx="1"/><rect x="2" y="10" width="14" height="4" rx="1"/><rect x="2" y="18" width="6" height="4" rx="1"/></svg>
-          </button>
-          <button class="ctrl-btn" onclick="toggleFullscreen()" title="Fullscreen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-          </button>
+          <div class="flex items-center justify-end mt-1.5">
+            <span class="text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">${timeStr}</span>
+          </div>
+        </div>`;
+    }
+  }
+
+  // Text rendering
+  if (text) {
+    const escapedText = escHtml(text).replace(/\n/g, '<br>');
+    bubble += `
+      <div class="${isMine ? 'msg-bubble-out' : 'msg-bubble-in'} rounded-2xl ${isMine ? 'rounded-tr-md' : 'rounded-tl-md'} px-3.5 py-2 max-w-[280px]">
+        <p class="text-sm ${isMine ? 'text-white' : 'text-gray-100'} leading-relaxed break-words">${escapedText}</p>
+        <div class="flex items-center justify-end gap-1 mt-1">
+          <span class="text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">${timeStr}</span>
+          ${isMine ? `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` : ''}
         </div>
-      </div>
+      </div>`;
+  }
 
-      <!-- Track Menu (Audio / Subtitles) -->
-      <div class="track-menu" id="track-menu">
-        <div class="track-group-label">Audio Tracks</div>
-        <div id="audio-tracks-list"></div>
-        <div class="track-divider"></div>
-        <div class="track-group-label">Subtitles</div>
-        <div id="subtitle-tracks-list"></div>
-        <div class="track-divider"></div>
-        <div class="track-group-label">External Subtitle</div>
-        <div class="track-item" onclick="loadExternalSub()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Load .srt / .vtt file…
+  const deleteBtn = isMine ? `
+    <button class="msg-action-btn w-6 h-6 rounded-full glass-light flex items-center justify-center hover:bg-red-500/20 transition-all self-end mb-1"
+      onclick="deleteMessage('${docSnap.id}')" title="Delete">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>` : '';
+
+  wrapper.innerHTML = isMine
+    ? `<div class="flex items-end gap-1.5 max-w-[85%]">${deleteBtn}<div class="flex flex-col items-end gap-1">${bubble}</div></div>`
+    : `<div class="flex items-end gap-1.5 max-w-[85%]">
+        <div class="w-6 h-6 rounded-full bg-gradient-to-br from-teal-400 to-accent-400 flex-shrink-0 flex items-center justify-center mb-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
         </div>
-      </div>
-    </div><!-- /player-viewport -->
+        <div class="flex flex-col items-start gap-1">${bubble}</div>
+       </div>`;
 
-    <!-- Bandwidth Monitor -->
-    <div class="bandwidth-monitor" id="bw-monitor">
-      <div class="bw-stat">
-        <span class="bw-label">BUF</span>
-        <span class="bw-value" id="bw-buf">0.0s</span>
-      </div>
-      <div class="bw-stat">
-        <span class="bw-label">SPEED</span>
-        <span class="bw-value" id="bw-speed">0 KB/s</span>
-      </div>
-      <div class="bw-bar">
-        <div class="bw-fill" id="bw-fill"></div>
-      </div>
-      <div class="bw-stat">
-        <span class="bw-label">TOTAL</span>
-        <span class="bw-value" id="bw-total">0.00 MB</span>
-      </div>
-      <div class="bw-stat">
-        <span class="bw-label">ENGINE</span>
-        <span class="engine-badge" id="bw-engine">HLS.js</span>
-      </div>
-      <div class="bw-stat">
-        <span class="bw-label">QUALITY</span>
-        <span class="bw-value" id="bw-quality">—</span>
-      </div>
-    </div>
+  container.appendChild(wrapper);
+}
 
-  </div><!-- /theater-shell -->
-</div><!-- /theater-modal -->
+// ─── SEND MESSAGE ────────────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text && !pendingFile) return;
+  if (!cryptoKey) { showToast('Encryption not ready', 'error'); return; }
 
-<!-- ═══════════════════════════════════════════════════
-     LOGIN MODAL
-═══════════════════════════════════════════════════ -->
-<div id="login-modal">
-  <div class="login-card">
-    <div class="login-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-    </div>
-    <h1 class="login-title">Personal Cinema</h1>
-    <p class="login-sub">Sign in with your Google Apps Script backend,<br>or skip to enjoy Guest Mode.</p>
-    <div class="login-form">
-      <div class="form-field">
-        <label class="form-label">Your Name</label>
-        <input class="form-input" id="login-name" placeholder="Enter your name…" value="">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Google Apps Script URL (optional)</label>
-        <input class="form-input" id="login-gas-url" placeholder="https://script.google.com/macros/s/…">
-      </div>
-      <button class="btn btn-primary btn-full" onclick="loginWithSheets()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Connect & Sign In
-      </button>
-      <div class="login-divider">or</div>
-      <button class="btn btn-secondary btn-full" onclick="enterGuestMode()">
-        Continue as Guest
-      </button>
-    </div>
-  </div>
-</div>
+  const sendBtn = document.getElementById('btn-send');
+  sendBtn.disabled = true;
 
-<!-- Toast Container -->
-<div id="toast-container"></div>
+  try {
+    const payload = { sender: LOCAL_SENDER_ID, ts: serverTimestamp() };
 
-<!-- ═══════════════════════════════════════════════════
-     CORE APPLICATION JAVASCRIPT
-═══════════════════════════════════════════════════ -->
-<script>
-'use strict';
+    if (pendingFile) {
+      const { name, mime, b64 } = pendingFile;
+      payload.fileName = await Crypto.encrypt(name, cryptoKey);
+      payload.fileMime = await Crypto.encrypt(mime, cryptoKey);
+      payload.fileData = await Crypto.encrypt(b64, cryptoKey);
+      clearPendingFile();
+    }
 
-/* ═══════════════════════════════════════════════════
-   GLOBAL STATE
-═══════════════════════════════════════════════════ */
-const APP = {
-  version: '2.0.0',
-  user: null,           // { name, gasUrl }
-  isGuest: true,
-  library: [],
-  iptvChannels: [],
-  iptvFiltered: [],
-  currentMedia: null,
-  corsProxy: 'https://corsproxy.io/?',
-  hlsBufferSecs: 5,
-  totalDataBytes: 0,
-  lastSpeed: 0,
+    if (text) {
+      payload.text = await Crypto.encrypt(text, cryptoKey);
+    }
+
+    await addDoc(collection(db, 'rooms', roomId, 'messages'), payload);
+    input.value = '';
+    input.style.height = 'auto';
+    updateSendBtn();
+  } catch(e) {
+    showToast('Failed to send message', 'error');
+    console.error(e);
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+// ─── DELETE SINGLE MESSAGE ───────────────────────────────────────────────────
+window.deleteMessage = async (msgId) => {
+  try {
+    await deleteDoc(doc(db, 'rooms', roomId, 'messages', msgId));
+  } catch(e) {
+    showToast('Could not delete message', 'error');
+  }
 };
 
-// VLC Engine state
-const VLC_ENGINE = {
-  instance: null,
-  ready: false,
-  canvas: null,
-  usingVLC: false,
+// ─── NUKE CONVERSATION ───────────────────────────────────────────────────────
+async function nukeConversation() {
+  showConfirm(
+    'Delete Conversation?',
+    'All messages will be permanently erased from the database. This cannot be undone.',
+    async () => {
+      try {
+        const msgsRef = collection(db, 'rooms', roomId, 'messages');
+        const snap = await getDocs(msgsRef);
+        const batch = writeBatch(db);
+        snap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        showToast('🗑️ Conversation deleted', 'success');
+      } catch(e) {
+        showToast('Delete failed', 'error');
+        console.error(e);
+      }
+    }
+  );
+}
+
+// ─── FILE HANDLING ───────────────────────────────────────────────────────────
+function handleFileSelect(file) {
+  if (!file) return;
+  const MAX_SIZE = 800 * 1024; // 800KB
+  if (file.size >= MAX_SIZE) {
+    showToast(`⚠️ File too large (${(file.size/1024).toFixed(0)}KB). Max 800KB.`, 'error');
+    document.getElementById('file-input').value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const b64 = e.target.result;
+    pendingFile = { name: file.name, mime: file.type || 'application/octet-stream', b64 };
+
+    const bar = document.getElementById('file-preview-bar');
+    bar.style.display = 'flex';
+    bar.classList.remove('hidden');
+
+    document.getElementById('file-preview-name').textContent = file.name;
+    document.getElementById('file-preview-size').textContent = `${(file.size / 1024).toFixed(1)} KB`;
+
+    const thumb = document.getElementById('file-preview-thumb');
+    if (file.type.startsWith('image/')) {
+      thumb.innerHTML = `<img src="${b64}" class="w-full h-full object-cover" />`;
+    }
+    updateSendBtn();
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPendingFile() {
+  pendingFile = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-preview-bar').classList.add('hidden');
+  document.getElementById('file-preview-thumb').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`;
+  updateSendBtn();
+}
+
+// ─── DOWNLOAD ─────────────────────────────────────────────────────────────────
+window.downloadFile = (encodedDataUrl, encodedName) => {
+  const dataUrl = decodeURIComponent(encodedDataUrl);
+  const name = decodeURIComponent(encodedName);
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = name;
+  a.click();
 };
 
-// HLS.js instance (fallback)
-let hlsInstance = null;
+// ─── VOICE INPUT ─────────────────────────────────────────────────────────────
+let recognition = null;
+let isListening = false;
 
-// Bandwidth monitor state
-const BW = {
-  bufferedSecs: 0,
-  speedKBs: 0,
-  totalMB: 0,
-  quality: '—',
-  intervalId: null,
-  lastBytes: 0,
-  lastTime: Date.now(),
-};
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
 
-// Playback state
-const PLAYBACK = {
-  active: false,
-  playing: false,
-  muted: false,
-  volume: 100,
-  duration: 0,
-  currentTime: 0,
-  controlsTimeout: null,
-  subtitleTrackUrl: null,
-};
+  recognition.onresult = (e) => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+    document.getElementById('msg-input').value = transcript;
+    updateSendBtn();
+  };
+  recognition.onend = () => {
+    isListening = false;
+    document.getElementById('btn-mic').classList.remove('mic-active');
+  };
+  recognition.onerror = (e) => {
+    showToast('Mic error: ' + e.error, 'error');
+    isListening = false;
+    document.getElementById('btn-mic').classList.remove('mic-active');
+  };
+}
 
-// Default fallback library
-const DEFAULT_LIBRARY = [
-  {
-    id: 'def-1',
-    title: 'Big Buck Bunny',
-    type: 'mp4',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    sub: '',
-    thumb: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/220px-Big_buck_bunny_poster_big.jpg',
-  },
-  {
-    id: 'def-2',
-    title: "Elephant's Dream",
-    type: 'mp4',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    sub: '',
-    thumb: '',
-  },
-  {
-    id: 'def-3',
-    title: 'Subaru Outback (4K HLS)',
-    type: 'hls',
-    url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
-    sub: '',
-    thumb: '',
-  },
+function toggleVoice() {
+  if (!recognition) { showToast('Voice not supported in this browser', 'error'); return; }
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+    isListening = true;
+    document.getElementById('btn-mic').classList.add('mic-active');
+    showToast('🎤 Listening…', 'info');
+  }
+}
+
+// ─── EMOJI PICKER ─────────────────────────────────────────────────────────────
+const EMOJIS = [
+  '😀','😂','🥲','😍','🤩','😎','🥳','😴','🤔','🤯','😱','🤮','💀','👻','🎃',
+  '❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','✨','🔥','⚡','🌈','🌸','🍀',
+  '👍','👎','👋','🙌','👏','🤝','✌️','🤞','🫶','💪','🦾','🙏','🫂','💅','🤌',
+  '🎉','🎊','🎈','🎁','🏆','🥇','⭐','🌟','💡','🔒','🔑','🛡️','⚔️','🚀','🌙',
+  '😆','😅','😂','🤣','🥹','😊','😋','😛','😜','🤪','😝','🤑','🤗','🫡','🤭',
+  '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🦁','🐯','🐨','🐸','🐙','🦋','🦄',
+  '🍕','🍔','🌮','🍜','🍣','🍰','🎂','🍩','☕','🧋','🥤','🍺','🥂','🍷','🧃',
+  '⚽','🏀','🎮','🎯','🎲','🃏','🎸','🎵','🎤','🎬','📷','💻','📱','⌚','🔭',
 ];
 
-/* ═══════════════════════════════════════════════════
-   INITIALIZATION
-═══════════════════════════════════════════════════ */
-window.addEventListener('DOMContentLoaded', async () => {
-  checkEnvironment();
-  loadPersistedState();
-  tryLoadVLC();
-  setupKeyboardNav();
-  document.getElementById('login-modal').style.display = 'flex';
-});
-
-function checkEnvironment() {
-  // SharedArrayBuffer check (requires COOP/COEP headers)
-  const sabAvail = typeof SharedArrayBuffer !== 'undefined';
-  document.getElementById('sab-status').textContent = sabAvail ? 'Available ✓' : 'Blocked';
-  document.getElementById('sab-status').style.color = sabAvail ? '#81c784' : 'var(--md-sys-color-error)';
-
-  // MSE check
-  const mseAvail = typeof MediaSource !== 'undefined';
-  document.getElementById('mse-status').textContent = mseAvail ? 'Available ✓' : 'N/A';
-  document.getElementById('mse-status').style.color = mseAvail ? '#81c784' : 'var(--md-sys-color-on-surface-variant)';
-
-  // HLS.js
-  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-    document.getElementById('hls-status').textContent = `v${Hls.version} ✓`;
-  } else {
-    document.getElementById('hls-status').textContent = 'Not supported';
-    document.getElementById('hls-status').style.color = 'var(--md-sys-color-error)';
-  }
-}
-
-function loadPersistedState() {
-  try {
-    const lib = localStorage.getItem('cinema_library');
-    if (lib) APP.library = JSON.parse(lib);
-    const gas = localStorage.getItem('cinema_gas_url');
-    if (gas) document.getElementById('set-gas-url').value = gas;
-    const proxy = localStorage.getItem('cinema_cors_proxy');
-    if (proxy) { APP.corsProxy = proxy; document.getElementById('set-cors-proxy').value = proxy; }
-    const hlsBuf = localStorage.getItem('cinema_hls_buf');
-    if (hlsBuf) { APP.hlsBufferSecs = parseInt(hlsBuf); document.getElementById('set-hls-buffer').value = hlsBuf; }
-  } catch(e) { console.warn('Could not restore state', e); }
-  renderLibrary();
-}
-
-/* ═══════════════════════════════════════════════════
-   QUICK-PLAY / PASTE-TO-STREAM ENGINE
-   Works in guest mode — no backend required
-═══════════════════════════════════════════════════ */
-
-/**
- * Called on paste event — instantly reads clipboard,
- * populates the input and detects the stream type.
- */
-function handleQuickPaste(event) {
-  // Let the paste fill the input first, then detect
-  setTimeout(() => {
-    const val = document.getElementById('quickplay-input').value.trim();
-    if (val) updateQPBadge(val);
-  }, 0);
-}
-
-/**
- * Enter key triggers instant stream
- */
-function handleQuickKey(event) {
-  const val = document.getElementById('quickplay-input').value.trim();
-  if (val) updateQPBadge(val);        // live type detection as user types
-  if (event.key === 'Enter' && val) {
-    event.preventDefault();
-    quickPlay();
-  }
-}
-
-/**
- * Detects the stream type from the URL.
- * Handles signed S3/R2 URLs that have query params.
- */
-function detectStreamType(url) {
-  if (!url) return 'unknown';
-  // Strip query string for extension check
-  const clean = url.split('?')[0].toLowerCase();
-  if (clean.endsWith('.m3u8') || url.includes('.m3u8'))      return 'hls';
-  if (clean.endsWith('.mkv')  || url.includes('.mkv'))        return 'mkv';
-  if (clean.endsWith('.mp4')  || url.includes('.mp4'))        return 'mp4';
-  if (clean.endsWith('.webm') || url.includes('.webm'))       return 'mkv';
-  if (clean.endsWith('.avi')  || url.includes('.avi'))        return 'mkv';
-  if (url.startsWith('rtsp://') || url.startsWith('rtmp://')) return 'live';
-  return 'mp4'; // default
-}
-
-/**
- * Updates the type badge colour and label
- */
-function updateQPBadge(url) {
-  const badge = document.getElementById('qp-type-badge');
-  const type = detectStreamType(url);
-  badge.textContent = type.toUpperCase();
-  badge.className = 'qp-type-badge ' + type;
-}
-
-/**
- * Main entry point — reads the paste bar URL,
- * builds a transient media object, and opens the theater.
- * No library save, no auth check.
- */
-async function quickPlay() {
-  const input = document.getElementById('quickplay-input');
-  const url = input.value.trim();
-  
-  if (!url) {
-    showToast('Paste a video link first', 'error');
-    input.focus();
-    return;
-  }
-
-  // 🔥 SIMPLE: Direct playback for signed R2/S3 URLs
-  if (url.includes('X-Amz-Signature') || url.includes('X-Amz-Algorithm')) {
-    const modal = document.getElementById('theater-modal');
-    const video = document.getElementById('html5-video');
-    
-    modal.classList.add('open');
-    document.getElementById('now-playing-title').textContent = 'Playing...';
-    document.getElementById('bw-engine').textContent = 'Direct';
-    
-    // Just let the browser handle it
-    video.src = url;
-    video.crossOrigin = 'anonymous';
-    
-    try {
-      await video.play();
-      hideLoader();
-      PLAYBACK.active = true;
-      PLAYBACK.playing = true;
-      setPlayIcon(true);
-      showToast('Playing signed URL directly ✓', 'success');
-    } catch(err) {
-      console.error('Playback failed:', err);
-      showPlayerError('Cannot play. The link may be expired or CORS-blocked.');
-    }
-    input.value = '';
-    return;
-  }
-
-  // ... rest of your original quickPlay logic for non-signed URLs ...
-  const type = detectStreamType(url);
-  const raw = url.split('?')[0].split('/').pop() || 'Quick Stream';
-  const title = decodeURIComponent(raw).replace(/\.[^.]+$/, '').replace(/[._-]+/g, ' ').trim();
-  
-  const media = {
-    id: 'quick-' + Date.now(),
-    title: title || 'Quick Stream',
-    type,
-    url,
-    sub: '',
-    thumb: '',
-  };
-
-  input.value = '';
-  document.getElementById('qp-type-badge').textContent = '—';
-  document.getElementById('qp-type-badge').className = 'qp-type-badge';
-  
-  navigate('library');
-  await openTheater(media);
-}
-/* ═══════════════════════════════════════════════════
-   PATCHED openTheater — VLC.js-first for ALL types,
-   with clean fallback chain. No auth required.
-═══════════════════════════════════════════════════ */
-
-/**
- * Override the original openTheater to add:
- * 1. VLC.js canvas path for MKV / HEVC
- * 2. Signed URL passthrough (no proxy mangling)
- * 3. Guest-mode bypass
- */
-const _originalOpenTheater = window.openTheater; // keep reference if needed
-
-window.openTheater = async function(media) {
-  APP.currentMedia = media;
-  PLAYBACK.subtitleTrackUrl = media.sub || null;
-
-  const modal = document.getElementById('theater-modal');
-  modal.classList.add('open');
-  document.getElementById('now-playing-title').textContent = media.title;
-  showLoader('Initialising…');
-  hidePlayerError();
-  resetProgressUI();
-
-  // Tear down previous session
-  destroyHLS();
-  if (typeof activeMSS !== 'undefined' && activeMSS) {
-    activeMSS.destroy();
-    activeMSS = null;
-  }
-
-  const video = document.getElementById('html5-video');
-  video.pause();
-  video.removeAttribute('src');
-  video.load();
-
-  await new Promise(r => setTimeout(r, 60));
-
-  // ── PATH 1: VLC.js WASM (if successfully loaded) ──────────────────
-  if (VLC_ENGINE.ready && VLC_ENGINE.usingVLC && VLC_ENGINE.instance) {
-    try {
-      await streamWithVLCEngine(media);
-      startBWMonitor();
-      PLAYBACK.active = true;
-      return;
-    } catch (err) {
-      console.warn('[VLC] Engine failed, falling back to native:', err);
-      VLC_ENGINE.usingVLC = false;
-      document.getElementById('html5-video').style.display = 'block';
-      document.getElementById('vlc-canvas').style.display  = 'none';
-    }
-  }
-
-  // ── PATH 2: Native fallback (HLS.js / MSE / direct) ───────────────
-  await streamWithNativeFallback(media, video);
-  startBWMonitor();
-  PLAYBACK.active = true;
-};
-
-/**
- * VLC.js WASM streaming path.
- * Passes the URL directly — VLC handles container demux,
- * HEVC decode, audio tracks, internal subtitles natively.
- */
-async function streamWithVLCEngine(media) {
-  const player = VLC_ENGINE.instance;
-
-  // Show the WASM canvas, hide the <video> element
-  document.getElementById('vlc-canvas').style.display  = 'block';
-  document.getElementById('html5-video').style.display = 'none';
-  document.getElementById('bw-engine').textContent = 'VLC WASM';
-
-  updateLoaderMsg('VLC.js — opening stream…');
-
-  // For signed S3/R2 URLs: pass them directly.
-  // Signed URLs are tied to the original host so a CORS proxy
-  // would break the signature. VLC WASM fetches internally via XHR.
-  const playUrl = media.url;
-
-  // Stop any current media cleanly
-  try { player.stop(); } catch(e) {}
-  await new Promise(r => setTimeout(r, 80));
-
-  // Set volume
-  try { player.audio.volume = PLAYBACK.volume / 100; } catch(e) {}
-
-  // Play
-  await player.play(playUrl);
-
-  // VLC.js fires onplay once the pipeline opens
-  await new Promise((resolve, reject) => {
-    let tries = 0;
-    const check = setInterval(() => {
-      tries++;
-      try {
-        if (player.playing) {
-          clearInterval(check);
-          resolve();
-        }
-      } catch(e) {}
-      if (tries > 60) {   // 6-second timeout
-        clearInterval(check);
-        reject(new Error('VLC did not start playing within timeout'));
-      }
-    }, 100);
-  });
-
-  hideLoader();
-  PLAYBACK.playing = true;
-  setPlayIcon(true);
-
-  // Load external subtitle if provided
-  if (media.sub) {
-    try { player.subtitle.track = await player.subtitle.open(media.sub); } catch(e) {}
-  }
-
-  // Populate track menus from VLC
-  try { populateVLCTracks(player); } catch(e) {}
-
-  // Sync progress from VLC state
-  startVLCProgressSync(player);
-}
-
-/**
- * Polls VLC engine state to drive the custom progress bar & time display.
- */
-let _vlcSyncInterval = null;
-function startVLCProgressSync(player) {
-  if (_vlcSyncInterval) clearInterval(_vlcSyncInterval);
-  _vlcSyncInterval = setInterval(() => {
-    if (!PLAYBACK.active) { clearInterval(_vlcSyncInterval); return; }
-    try {
-      const t = player.time   || 0;   // ms
-      const l = player.length || 0;   // ms
-      PLAYBACK.currentTime = t / 1000;
-      PLAYBACK.duration    = l / 1000;
-      BW.bufferedSecs      = Math.max(0, (l - t) / 1000);
-      updateProgressUI();
-      updateTimeDisplay();
-    } catch(e) { clearInterval(_vlcSyncInterval); }
-  }, 250);
-}
-
-/**
- * Native browser fallback — routes by type.
- * MKV/signed URLs: try byte-range MSE first, then direct src.
- * M3U8: HLS.js with 5-second buffer cap.
- */
-async function streamWithNativeFallback(media, video) {
-  const type = media.type || detectStreamType(media.url);
-
-  document.getElementById('html5-video').style.display = 'block';
-  document.getElementById('vlc-canvas').style.display  = 'none';
-
-  if (type === 'hls' || media.url.split('?')[0].endsWith('.m3u8')) {
-    // HLS — signed URLs need to bypass the CORS proxy
-    const isSignedUrl = media.url.includes('X-Amz-Signature') ||
-                        media.url.includes('token=')          ||
-                        media.url.includes('X-Goog-Signature');
-    const hlsUrl = isSignedUrl ? media.url : (APP.corsProxy + encodeURIComponent(media.url));
-    playHLS(hlsUrl, video);
-
-  } else if (type === 'mkv' || type === 'mp4' || type === 'webm') {
-    // For byte-range / MSE: try without proxy first (CORS permitting)
-    // R2 buckets that have CORS enabled will work directly.
-    await streamMkvDirect(media.url, video, type);
-
-  } else if (type === 'live') {
-    video.src = media.url;
-    video.play().catch(() => {});
-
-  } else {
-    video.src = media.url;
-    video.play().catch(() => {});
-  }
-
-  if (media.sub) {
-    await injectSubtitle(video, media.sub);
-  }
-
-  video.addEventListener('loadedmetadata', () => {
-    populateNativeTracks(video);
-  }, { once: true });
-}
-
-/**
- * Attempt to stream an MKV/MP4 via byte-range (MSE).
- * Falls back to setting .src directly if MSE fails.
- *
- * Signed S3 / Cloudflare R2 URLs: the Range header is allowed
- * if the bucket CORS policy permits it. The signature itself
- * covers the host and path, not the Range header, so it works.
- */
-async function streamMkvDirect(url, video, type) {
-  updateLoaderMsg('Probing stream…');
-  document.getElementById('bw-engine').textContent = 'MSE/Range';
-
-  // 🔥 NEW: Detect signed URLs and bypass proxy
-  const isSignedUrl = url.includes('X-Amz-Signature') || 
-                      url.includes('X-Amz-Algorithm') ||
-                      url.includes('token=') ||
-                      url.includes('X-Goog-Signature');
-  
-  // Use direct URL for signed requests, proxy otherwise
-  const streamUrl = isSignedUrl ? url : (APP.corsProxy + encodeURIComponent(url));
-  
-  if (isSignedUrl) {
-    console.info('[MSE] Signed URL detected — bypassing CORS proxy');
-    document.getElementById('bw-engine').textContent = 'Direct/Signed';
-  }
-
-  // Codec detection (unchanged)
-  const codecMap = {
-    mkv:  ['video/webm; codecs="vp9,opus"', 'video/webm; codecs="vp8,vorbis"'],
-    mp4:  ['video/mp4; codecs="avc1.42E01E,mp4a.40.2"', 'video/mp4; codecs="avc1.64001E,mp4a.40.2"'],
-    webm: ['video/webm; codecs="vp9,opus"'],
-  };
-  const candidates = codecMap[type] || codecMap.mp4;
-  const mimeType = candidates.find(m => MediaSource.isTypeSupported(m));
-
-  if (!mimeType || typeof MediaSource === 'undefined') {
-    console.info('[MSE] No supported codec — using direct src');
-    video.src = streamUrl; // 🔥 Use streamUrl, not proxied
-    video.play().catch(e => console.warn('Playback failed:', e));
-    return;
-  }
-
-  try {
-    // 🔥 Probe with correct URL (signed or proxied)
-    const probe = await fetch(streamUrl, {
-      headers: { 'Range': 'bytes=0-1023' },
-      mode: isSignedUrl ? 'cors' : 'cors', // Signed URLs need proper CORS on R2
+function buildEmojiGrid() {
+  const grid = document.getElementById('emoji-grid');
+  EMOJIS.forEach(em => {
+    const btn = document.createElement('button');
+    btn.textContent = em;
+    btn.className = 'text-xl p-1.5 rounded-lg hover:bg-white/10 transition-colors leading-none';
+    btn.addEventListener('click', () => {
+      const input = document.getElementById('msg-input');
+      input.value += em;
+      updateSendBtn();
+      input.focus();
     });
-
-    if (probe.status !== 206 && probe.status !== 200) {
-      throw new Error('Range not supported (status ' + probe.status + ')');
-    }
-
-    // Start chunked streaming
-    activeMSS = new MemorySafeStreamer(video);
-    activeMSS.mimeType = mimeType;
-    await activeMSS.streamMKV(streamUrl); // 🔥 Pass correct URL
-
-    video.play().catch(e => console.warn('Autoplay failed:', e));
-
-  } catch (err) {
-    console.warn('[MSE] Byte-range failed:', err.message);
-    // Fallback to direct playback
-    video.src = streamUrl;
-    video.play().catch(e => console.warn('Fallback playback failed:', e));
-    document.getElementById('bw-engine').textContent = 'Direct';
-  }
-}
-
-/* ═══════════════════════════════════════════════════
-   GUEST MODE PATCH
-   Remove auth guard from openTheater — already guest-safe
-   but this makes it explicit and skips the login check.
-═══════════════════════════════════════════════════ */
-
-// Auto-enter guest mode if no saved user is found on load
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('cinema_user');
-  if (!saved) {
-    // Pre-fill login name field to hint the user can just click Guest
-    document.getElementById('login-name').placeholder = 'Optional — leave blank for Guest';
-  }
-});
-
-// Patch the enterGuestMode so it skips loadDefaults on repeat visits
-const _origGuestMode = window.enterGuestMode;
-window.enterGuestMode = function() {
-  APP.isGuest = true;
-  APP.user = { name: 'Guest', gasUrl: null };
-  document.getElementById('user-name').textContent = 'Guest Mode';
-  document.getElementById('user-avatar').textContent = 'G';
-  document.getElementById('mode-label').textContent  = 'Guest';
-  document.getElementById('stat-backend').textContent     = 'Guest';
-  document.getElementById('stat-backend-sub').textContent = 'Paste any link above to stream';
-  document.getElementById('login-modal').style.display = 'none';
-
-  // Only load defaults if library is truly empty
-  if (APP.library.length === 0) loadDefaults();
-  loadIPTV();
-  showToast('Guest Mode — paste any link in the bar above to stream instantly.', 'success');
-};
-
-/* ═══════════════════════════════════════════════════
-   VLC.js WASM ENGINE
-═══════════════════════════════════════════════════ */
-async function tryLoadVLC() {
-  updateLoaderMsg('Attempting VLC.js WASM load…');
-  try {
-    // Attempt to load VLC.js from VideoLAN CDN
-    // The actual VLC WASM binary requires SharedArrayBuffer & COOP/COEP headers
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://code.videolan.org/videolan/vlc-wasm/-/raw/main/www/vlc.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      script.timeout = 8000;
-      document.head.appendChild(script);
-      setTimeout(reject, 8000);
-    });
-
-    if (typeof VLC !== 'undefined') {
-      const canvas = document.getElementById('vlc-canvas');
-      VLC_ENGINE.canvas = canvas;
-
-      // Instantiate VLC with canvas target & multi-thread config
-      VLC_ENGINE.instance = await VLC({
-        canvas: canvas,
-        arguments: [
-          '--no-osd',
-          '--network-caching=5000',  // 5-second network cache
-          '--live-caching=5000',
-          '--file-caching=1000',
-          '--sout-transcode-threads=4',
-        ],
-        locateFile: (file) => `https://code.videolan.org/videolan/vlc-wasm/-/raw/main/www/${file}`,
-      });
-
-      VLC_ENGINE.ready = true;
-      VLC_ENGINE.usingVLC = true;
-      document.getElementById('vlc-status').textContent = 'Loaded ✓';
-      document.getElementById('vlc-status').style.color = '#81c784';
-      document.getElementById('engine-label').textContent = 'VLC WASM';
-      document.getElementById('bw-engine').textContent = 'VLC';
-      canvas.style.display = 'block';
-      document.getElementById('html5-video').style.display = 'none';
-      showToast('VLC.js WASM engine active', 'success');
-    } else {
-      throw new Error('VLC global not found after script load');
-    }
-  } catch(err) {
-    console.info('VLC.js WASM not available, using HLS.js + MSE fallback:', err.message);
-    document.getElementById('vlc-status').textContent = 'Fallback mode';
-    document.getElementById('vlc-status').style.color = 'var(--md-sys-color-on-surface-variant)';
-    VLC_ENGINE.usingVLC = false;
-    // Continue with HLS.js / native video
-  }
-}
-
-/* ═══════════════════════════════════════════════════
-   MEMORY-SAFE STREAMER
-═══════════════════════════════════════════════════ */
-class MemorySafeStreamer {
-  constructor(video) {
-    this.video = video;
-    this.mediaSource = null;
-    this.sourceBuffer = null;
-    this.chunkQueue = [];
-    this.fetching = false;
-    this.totalFetched = 0;
-    this.chunkSize = 1024 * 1024; // 1 MB chunks
-    this.maxBufferedBytes = 10 * 1024 * 1024; // 10 MB max buffer
-  }
-
-  async streamMKV(url) {
-  // 🔥 FIX: Detect signed URLs and NEVER proxy them
-  const isSignedUrl = url.includes('X-Amz-Signature') || 
-                      url.includes('X-Amz-Algorithm') ||
-                      url.includes('token=') ||
-                      url.includes('X-Goog-Signature');
-  
-  const streamUrl = isSignedUrl ? url : (APP.corsProxy + encodeURIComponent(url));
-  
-  if (isSignedUrl) {
-    console.info('[MSS] Signed URL — bypassing proxy');
-    document.getElementById('bw-engine').textContent = 'Direct/Signed';
-  }
-
-  try {
-    // 🔥 FIX: Use streamUrl, not hardcoded proxied
-    const head = await fetch(streamUrl, { 
-      method: 'HEAD',
-      mode: 'cors'
-    });
-    const contentLength = parseInt(head.headers.get('content-length') || '0');
-
-    // Check MSE support
-    const mimeType = url.toLowerCase().includes('.mkv')
-      ? 'video/webm; codecs="vp9,opus"'
-      : 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"';
-
-    if (!MediaSource.isTypeSupported(mimeType)) {
-      throw new Error('MSE codec not supported');
-    }
-
-    this.mediaSource = new MediaSource();
-    this.video.src = URL.createObjectURL(this.mediaSource);
-    await new Promise(resolve => this.mediaSource.addEventListener('sourceopen', resolve, { once: true }));
-
-    this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
-
-    let offset = 0;
-    const fetchNextChunk = async () => {
-      if (offset >= contentLength && contentLength > 0) {
-        this.mediaSource.endOfStream();
-        return;
-      }
-
-      // Buffer management
-      while (this.sourceBuffer.buffered.length > 0 &&
-             this.totalFetched - offset > this.maxBufferedBytes &&
-             this.sourceBuffer.buffered.start(0) < this.video.currentTime - 10) {
-        if (!this.sourceBuffer.updating) {
-          this.sourceBuffer.remove(0, this.video.currentTime - 10);
-        }
-        await new Promise(r => setTimeout(r, 100));
-      }
-
-      const end = Math.min(offset + this.chunkSize - 1, contentLength > 0 ? contentLength - 1 : offset + this.chunkSize - 1);
-      const startTime = Date.now();
-
-      // 🔥 FIX: Use streamUrl with Range header
-      const res = await fetch(streamUrl, {
-        headers: { 'Range': `bytes=${offset}-${end}` },
-        mode: 'cors'
-      });
-
-      if (!res.ok) throw new Error(`Chunk failed: ${res.status}`);
-      const buf = await res.arrayBuffer();
-
-      const elapsed = (Date.now() - startTime) / 1000 || 1;
-      BW.speedKBs = Math.round((buf.byteLength / 1024) / elapsed);
-      this.totalFetched += buf.byteLength;
-      APP.totalDataBytes += buf.byteLength;
-      BW.totalMB = APP.totalDataBytes / (1024 * 1024);
-
-      await new Promise(resolve => {
-        const doAppend = () => {
-          if (!this.sourceBuffer.updating) {
-            this.sourceBuffer.appendBuffer(buf);
-            this.sourceBuffer.addEventListener('updateend', resolve, { once: true });
-          } else {
-            setTimeout(doAppend, 50);
-          }
-        };
-        doAppend();
-      });
-
-      offset += buf.byteLength;
-      const bufferedEnd = this.sourceBuffer.buffered.length > 0 ? this.sourceBuffer.buffered.end(this.sourceBuffer.buffered.length - 1) : 0;
-      const bufferAhead = bufferedEnd - this.video.currentTime;
-
-      if (bufferAhead < APP.hlsBufferSecs * 2) {
-        fetchNextChunk();
-      } else {
-        setTimeout(fetchNextChunk, 1000);
-      }
-    };
-
-    fetchNextChunk();
-  } catch(err) {
-    console.warn('[MSS] MSE failed, falling back to direct src:', err.message);
-    // 🔥 FIX: Fallback to direct video.src with correct URL
-    this.video.src = streamUrl;
-    this.video.play().catch(() => {});
-    document.getElementById('bw-engine').textContent = 'Direct';
-  }
-}
-
-let activeMSS = null;
-
-/* ═══════════════════════════════════════════════════
-   HLS.js STREAMING ENGINE (Fallback)
-═══════════════════════════════════════════════════ */
-function playHLS(url, videoEl) {
-  destroyHLS();
-  
-  // 🔥 FIX: Never proxy signed HLS URLs
-  const isSignedUrl = url.includes('X-Amz-Signature') || 
-                      url.includes('token=') ||
-                      url.includes('X-Goog-Signature');
-  const streamUrl = isSignedUrl ? url : (APP.corsProxy + encodeURIComponent(url));
-
-  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-    hlsInstance = new Hls({
-      maxBufferLength: APP.hlsBufferSecs,
-      maxMaxBufferLength: APP.hlsBufferSecs,
-      maxBufferSize: 10 * 1000 * 1000,
-      maxBufferHole: 0.5,
-      startPosition: 0,
-      enableWorker: true,
-      lowLatencyMode: false,
-      backBufferLength: 5,
-      // 🔥 FIX: Allow credentials for signed URLs
-      xhrSetup: isSignedUrl ? (xhr) => { xhr.withCredentials = false; } : undefined
-    });
-
-    hlsInstance.loadSource(streamUrl);
-    hlsInstance.attachMedia(videoEl);
-
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-      hideLoader();
-      BW.quality = `${data.levels.length} levels`;
-      updateBWDisplay();
-      videoEl.play().catch(() => {});
-    });
-
-    hlsInstance.on(Hls.Events.FRAG_LOADED, (event, data) => {
-      const loaded = data.frag.stats.loaded || 0;
-      APP.totalDataBytes += loaded;
-      BW.totalMB = APP.totalDataBytes / (1024 * 1024);
-      const elapsed = (data.frag.stats.buffering.end - data.frag.stats.buffering.start) / 1000 || 1;
-      if (elapsed > 0) BW.speedKBs = Math.round((loaded / 1024) / elapsed);
-    });
-
-    hlsInstance.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
-      const level = hlsInstance.levels[data.level];
-      if (level) {
-        const bps = level.bitrate;
-        BW.quality = bps > 1000000 ? `${(bps/1000000).toFixed(1)} Mbps` : `${Math.round(bps/1000)} kbps`;
-      }
-    });
-
-    hlsInstance.on(Hls.Events.ERROR, (event, data) => {
-      if (data.fatal) {
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          // 🔥 FIX: For signed URLs, try direct fallback
-          if (isSignedUrl) {
-            console.warn('[HLS] Network error on signed URL, trying direct src');
-            videoEl.src = url;
-            videoEl.play().catch(() => {});
-            document.getElementById('bw-engine').textContent = 'Direct';
-            return;
-          }
-          hlsInstance.startLoad();
-        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-          hlsInstance.recoverMediaError();
-        } else {
-          showPlayerError('HLS error: ' + data.details);
-        }
-      }
-    });
-
-    document.getElementById('bw-engine').textContent = isSignedUrl ? 'HLS/Signed' : 'HLS.js';
-  } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-    videoEl.src = streamUrl;
-    videoEl.play().catch(() => {});
-    document.getElementById('bw-engine').textContent = 'Native HLS';
-  } else {
-    // 🔥 FIX: Ultimate fallback for signed URLs
-    if (isSignedUrl) {
-      videoEl.src = url;
-      videoEl.play().catch(() => {});
-      document.getElementById('bw-engine').textContent = 'Direct';
-    } else {
-      showPlayerError('HLS not supported');
-    }
-  }
-}
-
-function destroyHLS() {
-  if (hlsInstance) {
-    hlsInstance.destroy();
-    hlsInstance = null;
-  }
-}
-
-/* ═══════════════════════════════════════════════════
-   MEDIA PLAYBACK ROUTER
-═══════════════════════════════════════════════════ */
-async function openTheater(media) {
-  APP.currentMedia = media;
-  
-  // 🔥 EMERGENCY FIX: Direct playback for signed R2/S3 URLs on GitHub Pages
-if (media.url.includes('X-Amz-Signature') || media.url.includes('X-Goog-Signature')) {
-  const video = document.getElementById('html5-video');
-  document.getElementById('vlc-canvas').style.display = 'none';
-  document.getElementById('html5-video').style.display = 'block';
-  document.getElementById('bw-engine').textContent = 'Direct/Signed';
-  
-  // Simple direct playback - let browser handle Range requests
-  video.src = media.url;
-  video.crossOrigin = 'anonymous';
-  video.play().catch(err => {
-    console.warn('Direct playback failed:', err);
-    showPlayerError('Cannot play signed URL. Check R2 CORS settings.');
-  });
-  
-  hideLoader();
-  PLAYBACK.active = true;
-  PLAYBACK.playing = true;
-  setPlayIcon(true);
-  startBWMonitor();
-  return; // Skip all complex logic
-}
-  PLAYBACK.subtitleTrackUrl = media.sub || null;
-
-  const modal = document.getElementById('theater-modal');
-  modal.classList.add('open');
-  document.getElementById('now-playing-title').textContent = media.title;
-  showLoader('Opening ' + media.title + '…');
-  hidePlayerError();
-  resetProgressUI();
-
-  // Always close previous
-  destroyHLS();
-  if (activeMSS) { activeMSS.destroy(); activeMSS = null; }
-  const video = document.getElementById('html5-video');
-  video.pause(); video.src = '';
-
-  await new Promise(r => setTimeout(r, 50));
-
-  if (VLC_ENGINE.ready && VLC_ENGINE.usingVLC) {
-    await playWithVLC(media);
-  } else {
-    await playWithFallback(media, video);
-  }
-
-  startBWMonitor();
-  PLAYBACK.active = true;
-}
-
-async function playWithVLC(media) {
-  try {
-    const player = VLC_ENGINE.instance;
-    updateLoaderMsg('VLC WASM loading…');
-
-    const url = needsProxy(media.url)
-      ? APP.corsProxy + encodeURIComponent(media.url)
-      : media.url;
-
-    player.audio.volume = PLAYBACK.volume / 100;
-    await player.play(url);
-
-    hideLoader();
-    PLAYBACK.playing = true;
-    setPlayIcon(true);
-    document.getElementById('bw-engine').textContent = 'VLC';
-
-    // Load subtitles if provided
-    if (media.sub) {
-      try { player.subtitle.track = await player.subtitle.open(media.sub); } catch(e) {}
-    }
-
-    // Populate track menus from VLC
-    populateVLCTracks(player);
-  } catch(err) {
-    console.warn('VLC playback failed, falling back:', err);
-    VLC_ENGINE.usingVLC = false;
-    document.getElementById('html5-video').style.display = 'block';
-    await playWithFallback(media, document.getElementById('html5-video'));
-  }
-}
-
-async function playWithFallback(media, video) {
-  const type = media.type || detectType(media.url);
-  updateLoaderMsg('Loading stream…');
-
-  if (type === 'hls' || media.url.includes('.m3u8')) {
-    playHLS(media.url, video);
-  } else if (type === 'mkv' || media.url.includes('.mkv')) {
-    activeMSS = new MemorySafeStreamer(video);
-    await activeMSS.streamMKV(media.url);
-    video.play().catch(() => {});
-  } else {
-    // Direct MP4, etc.
-    const url = needsProxy(media.url)
-      ? APP.corsProxy + encodeURIComponent(media.url)
-      : media.url;
-    video.src = url;
-    video.play().catch(() => {});
-  }
-
-  // Load external subtitle
-  if (media.sub) {
-    await injectSubtitle(video, media.sub);
-  }
-
-  // Build track menus for native video
-  video.addEventListener('loadedmetadata', () => {
-    populateNativeTracks(video);
-  }, { once: true });
-}
-
-function needsProxy(url) {
-  if (!url) return false;
-  if (url.startsWith('blob:') || url.startsWith('data:')) return false;
-  
-  // 🔥 NEW: Never proxy signed URLs
-  if (url.includes('X-Amz-Signature') || 
-      url.includes('X-Amz-Algorithm') ||
-      url.includes('X-Goog-Signature') ||
-      url.includes('token=')) {
-    return false;
-  }
-  
-  return !url.includes(location.hostname);
-}
-
-function detectType(url) {
-  if (!url) return 'mp4';
-  if (url.includes('.m3u8')) return 'hls';
-  if (url.includes('.mkv') || url.includes('.webm')) return 'mkv';
-  if (url.includes('rtsp://') || url.includes('rtmp://')) return 'live';
-  return 'mp4';
-}
-
-/* ═══════════════════════════════════════════════════
-   SUBTITLE INJECTION
-═══════════════════════════════════════════════════ */
-async function injectSubtitle(video, subUrl) {
-  try {
-    const proxied = needsProxy(subUrl)
-      ? APP.corsProxy + encodeURIComponent(subUrl) : subUrl;
-
-    // Remove existing tracks
-    while (video.querySelector('track')) {
-      video.removeChild(video.querySelector('track'));
-    }
-
-    const ext = subUrl.toLowerCase().split('.').pop();
-
-    if (ext === 'srt') {
-      const res = await fetch(proxied);
-      const srtText = await res.text();
-      const vttText = srtToVTT(srtText);
-      const blob = new Blob([vttText], { type: 'text/vtt' });
-      const blobUrl = URL.createObjectURL(blob);
-      addTrackElement(video, blobUrl);
-    } else {
-      addTrackElement(video, proxied);
-    }
-  } catch(err) {
-    console.warn('Subtitle load failed:', err);
-    showToast('Could not load subtitle: ' + err.message, 'error');
-  }
-}
-
-function addTrackElement(video, src) {
-  const track = document.createElement('track');
-  track.kind = 'subtitles';
-  track.label = 'External';
-  track.srclang = 'en';
-  track.src = src;
-  track.default = true;
-  video.appendChild(track);
-  setTimeout(() => {
-    if (video.textTracks.length > 0) {
-      video.textTracks[0].mode = 'showing';
-    }
-  }, 300);
-}
-
-function srtToVTT(srt) {
-  return 'WEBVTT\n\n' + srt
-    .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2')
-    .replace(/(\r\n|\r)/g, '\n');
-}
-
-async function loadExternalSub() {
-  const url = prompt('Enter subtitle URL (.srt or .vtt):');
-  if (!url) return;
-  const video = document.getElementById('html5-video');
-  await injectSubtitle(video, url);
-  PLAYBACK.subtitleTrackUrl = url;
-  showToast('Subtitle loaded', 'success');
-}
-
-/* ═══════════════════════════════════════════════════
-   TRACK MENUS — AUDIO & SUBTITLES
-═══════════════════════════════════════════════════ */
-function populateVLCTracks(player) {
-  const audioList = document.getElementById('audio-tracks-list');
-  const subList = document.getElementById('subtitle-tracks-list');
-  audioList.innerHTML = '';
-  subList.innerHTML = '';
-
-  try {
-    const audioTracks = player.audio.track; // VLC.js API
-    if (audioTracks) {
-      Object.entries(audioTracks).forEach(([id, name]) => {
-        audioList.appendChild(makeTrackItem(name, () => player.audio.track = id, false));
-      });
-    }
-  } catch(e) {
-    audioList.innerHTML = '<div class="track-item" style="opacity:.5">No data</div>';
-  }
-
-  try {
-    const subTracks = player.subtitle.track;
-    if (subTracks) {
-      const disableItem = makeTrackItem('Disabled', () => { player.subtitle.track = -1; }, false);
-      subList.appendChild(disableItem);
-      Object.entries(subTracks).forEach(([id, name]) => {
-        subList.appendChild(makeTrackItem(name, () => player.subtitle.track = id, false));
-      });
-    }
-  } catch(e) {
-    subList.innerHTML = '<div class="track-item" style="opacity:.5">No data</div>';
-  }
-}
-
-function populateNativeTracks(video) {
-  const audioList = document.getElementById('audio-tracks-list');
-  const subList = document.getElementById('subtitle-tracks-list');
-  audioList.innerHTML = '';
-  subList.innerHTML = '';
-
-  // Audio tracks (Chrome supports AudioTrack API)
-  if (video.audioTracks && video.audioTracks.length > 0) {
-    Array.from(video.audioTracks).forEach((track, i) => {
-      const label = track.label || `Track ${i + 1} (${track.language || 'und'})`;
-      audioList.appendChild(makeTrackItem(label, () => {
-        Array.from(video.audioTracks).forEach(t => t.enabled = false);
-        track.enabled = true;
-      }, track.enabled));
-    });
-  } else {
-    audioList.innerHTML = '<div class="track-item" style="opacity:.5;font-size:12px;padding:6px 12px">Default audio track</div>';
-  }
-
-  // Text tracks / subtitles
-  if (video.textTracks && video.textTracks.length > 0) {
-    const disItem = makeTrackItem('Disabled', () => {
-      Array.from(video.textTracks).forEach(t => t.mode = 'hidden');
-    }, false);
-    subList.appendChild(disItem);
-
-    Array.from(video.textTracks).forEach((track, i) => {
-      const label = track.label || `Subtitle ${i + 1} (${track.language || 'en'})`;
-      subList.appendChild(makeTrackItem(label, () => {
-        Array.from(video.textTracks).forEach(t => t.mode = 'hidden');
-        track.mode = 'showing';
-      }, track.mode === 'showing'));
-    });
-  } else {
-    subList.innerHTML = '<div class="track-item" style="opacity:.5;font-size:12px;padding:6px 12px">No subtitle tracks</div>';
-  }
-}
-
-function makeTrackItem(label, onClick, selected) {
-  const div = document.createElement('div');
-  div.className = 'track-item' + (selected ? ' selected' : '');
-  div.innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      ${selected ? '<polyline points="20 6 9 17 4 12"/>' : '<circle cx="12" cy="12" r="4" opacity=".3"/>'}
-    </svg>
-    ${label}
-  `;
-  div.addEventListener('click', () => {
-    onClick();
-    document.querySelectorAll('.track-item').forEach(el => el.classList.remove('selected'));
-    div.classList.add('selected');
-    div.querySelector('svg').innerHTML = '<polyline points="20 6 9 17 4 12"/>';
-  });
-  return div;
-}
-
-function toggleTracks() {
-  const menu = document.getElementById('track-menu');
-  menu.classList.toggle('open');
-  // Refresh track list for native video
-  if (!VLC_ENGINE.usingVLC) {
-    populateNativeTracks(document.getElementById('html5-video'));
-  }
-}
-
-/* ═══════════════════════════════════════════════════
-   VIDEO CONTROL CALLBACKS
-═══════════════════════════════════════════════════ */
-function onVideoLoaded() {
-  hideLoader();
-  const video = document.getElementById('html5-video');
-  PLAYBACK.duration = video.duration;
-  setPlayIcon(true);
-  PLAYBACK.playing = !video.paused;
-  updateTimeDisplay();
-}
-
-function onVideoError() {
-  const video = document.getElementById('html5-video');
-  const err = video.error;
-  const msg = err ? `Error ${err.code}: ${err.message}` : 'Unknown playback error.';
-  showPlayerError(msg);
-}
-
-function onTimeUpdate() {
-  const video = document.getElementById('html5-video');
-  if (!video) return;
-  PLAYBACK.currentTime = video.currentTime;
-  PLAYBACK.duration = video.duration || 0;
-  updateProgressUI();
-  updateTimeDisplay();
-  updateBWBuffered(video);
-}
-
-function onBufferUpdate() {
-  updateBWBuffered(document.getElementById('html5-video'));
-}
-
-function updateBWBuffered(video) {
-  if (!video || !video.buffered || video.buffered.length === 0) return;
-  try {
-    const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-    const bufferedPct = video.duration > 0 ? (bufferedEnd / video.duration) * 100 : 0;
-    document.getElementById('progress-buffered').style.width = bufferedPct + '%';
-    BW.bufferedSecs = Math.max(0, bufferedEnd - video.currentTime);
-  } catch(e) {}
-}
-
-function togglePlayPause() {
-  if (VLC_ENGINE.usingVLC && VLC_ENGINE.instance) {
-    const player = VLC_ENGINE.instance;
-    if (player.playing) { player.pause(); setPlayIcon(false); }
-    else { player.play(); setPlayIcon(true); }
-    return;
-  }
-  const video = document.getElementById('html5-video');
-  if (video.paused) { video.play(); setPlayIcon(true); }
-  else { video.pause(); setPlayIcon(false); }
-}
-
-function setPlayIcon(playing) {
-  PLAYBACK.playing = playing;
-  document.getElementById('icon-play').style.display = playing ? 'none' : 'block';
-  document.getElementById('icon-pause').style.display = playing ? 'block' : 'none';
-}
-
-function skipBack() {
-  const video = document.getElementById('html5-video');
-  if (VLC_ENGINE.usingVLC && VLC_ENGINE.instance) {
-    VLC_ENGINE.instance.time = Math.max(0, VLC_ENGINE.instance.time - 10000);
-  } else {
-    video.currentTime = Math.max(0, video.currentTime - 10);
-  }
-}
-
-function skipForward() {
-  const video = document.getElementById('html5-video');
-  if (VLC_ENGINE.usingVLC && VLC_ENGINE.instance) {
-    VLC_ENGINE.instance.time += 10000;
-  } else {
-    video.currentTime = Math.min(video.duration, video.currentTime + 10);
-  }
-}
-
-function seekTo(e) {
-  const bar = document.getElementById('progress-bar');
-  const rect = bar.getBoundingClientRect();
-  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  const video = document.getElementById('html5-video');
-  if (VLC_ENGINE.usingVLC && VLC_ENGINE.instance) {
-    VLC_ENGINE.instance.position = pct;
-  } else if (video.duration) {
-    video.currentTime = pct * video.duration;
-  }
-}
-
-function seekPreview(e) {
-  // Could show a thumbnail preview — skipped for single-file constraint
-}
-
-function setVolume(val) {
-  PLAYBACK.volume = parseInt(val);
-  const video = document.getElementById('html5-video');
-  video.volume = PLAYBACK.volume / 100;
-  if (VLC_ENGINE.usingVLC && VLC_ENGINE.instance) {
-    VLC_ENGINE.instance.audio.volume = PLAYBACK.volume / 100;
-  }
-}
-
-function toggleMute() {
-  PLAYBACK.muted = !PLAYBACK.muted;
-  const video = document.getElementById('html5-video');
-  video.muted = PLAYBACK.muted;
-  if (VLC_ENGINE.usingVLC && VLC_ENGINE.instance) {
-    VLC_ENGINE.instance.audio.mute = PLAYBACK.muted;
-  }
-  document.getElementById('icon-vol').style.display = PLAYBACK.muted ? 'none' : 'block';
-  document.getElementById('icon-mute').style.display = PLAYBACK.muted ? 'block' : 'none';
-}
-
-function toggleFullscreen() {
-  const shell = document.querySelector('.theater-shell');
-  if (!document.fullscreenElement) {
-    shell.requestFullscreen?.();
-  } else {
-    document.exitFullscreen?.();
-  }
-}
-
-function retryPlayback() {
-  if (APP.currentMedia) openTheater(APP.currentMedia);
-}
-
-function updateProgressUI() {
-  const pct = PLAYBACK.duration > 0 ? (PLAYBACK.currentTime / PLAYBACK.duration) * 100 : 0;
-  document.getElementById('progress-fill').style.width = pct + '%';
-}
-
-function resetProgressUI() {
-  document.getElementById('progress-fill').style.width = '0%';
-  document.getElementById('progress-buffered').style.width = '0%';
-  document.getElementById('time-display').textContent = '0:00 / 0:00';
-}
-
-function updateTimeDisplay() {
-  const t = document.getElementById('time-display');
-  t.textContent = `${fmt(PLAYBACK.currentTime)} / ${fmt(PLAYBACK.duration)}`;
-}
-
-function fmt(s) {
-  if (!s || isNaN(s)) return '0:00';
-  const m = Math.floor(s / 60), ss = Math.floor(s % 60);
-  return `${m}:${String(ss).padStart(2,'0')}`;
-}
-
-function showControls() {
-  document.getElementById('player-title-bar').style.opacity = '1';
-  document.getElementById('custom-controls').style.opacity = '1';
-  clearTimeout(PLAYBACK.controlsTimeout);
-  PLAYBACK.controlsTimeout = setTimeout(hideControls, 3500);
-}
-
-function hideControls() {
-  document.getElementById('player-title-bar').style.opacity = '0';
-  document.getElementById('custom-controls').style.opacity = '0';
-  const menu = document.getElementById('track-menu');
-  if (menu.classList.contains('open')) menu.classList.remove('open');
-}
-
-function closeTheater() {
-  const modal = document.getElementById('theater-modal');
-  modal.classList.remove('open');
-  PLAYBACK.active = false;
-  PLAYBACK.playing = false;
-
-  destroyHLS();
-  if (activeMSS) { activeMSS.destroy(); activeMSS = null; }
-
-  const video = document.getElementById('html5-video');
-  video.pause(); video.src = '';
-
-  if (VLC_ENGINE.usingVLC && VLC_ENGINE.instance) {
-    try { VLC_ENGINE.instance.stop(); } catch(e) {}
-  }
-
-  stopBWMonitor();
-  document.getElementById('track-menu').classList.remove('open');
-}
-
-/* ═══════════════════════════════════════════════════
-   BANDWIDTH MONITOR
-═══════════════════════════════════════════════════ */
-function startBWMonitor() {
-  stopBWMonitor();
-  BW.intervalId = setInterval(updateBWDisplay, 500);
-}
-
-function stopBWMonitor() {
-  if (BW.intervalId) { clearInterval(BW.intervalId); BW.intervalId = null; }
-}
-
-function updateBWDisplay() {
-  document.getElementById('bw-buf').textContent = BW.bufferedSecs.toFixed(1) + 's';
-  document.getElementById('bw-speed').textContent = BW.speedKBs > 1024
-    ? (BW.speedKBs / 1024).toFixed(1) + ' MB/s'
-    : BW.speedKBs + ' KB/s';
-  document.getElementById('bw-total').textContent = BW.totalMB.toFixed(2) + ' MB';
-  document.getElementById('bw-quality').textContent = BW.quality;
-
-  // Fill bar: represents buffer (0-10s mapped to 0-100%)
-  const fillPct = Math.min(100, (BW.bufferedSecs / APP.hlsBufferSecs) * 100);
-  document.getElementById('bw-fill').style.width = fillPct + '%';
-
-  // Update stat cards
-  document.getElementById('stat-data').textContent =
-    BW.totalMB > 1024 ? (BW.totalMB / 1024).toFixed(2) + ' GB' : BW.totalMB.toFixed(1) + ' MB';
-}
-
-/* ═══════════════════════════════════════════════════
-   PLAYER OVERLAYS
-═══════════════════════════════════════════════════ */
-function showLoader(msg) {
-  const overlay = document.getElementById('player-loading');
-  overlay.classList.remove('hidden');
-  if (msg) document.getElementById('loader-msg').textContent = msg;
-}
-function hideLoader() {
-  document.getElementById('player-loading').classList.add('hidden');
-}
-function updateLoaderMsg(msg) {
-  document.getElementById('loader-msg').textContent = msg;
-}
-function showPlayerError(msg) {
-  hideLoader();
-  const el = document.getElementById('player-error');
-  el.classList.add('visible');
-  document.getElementById('player-error-msg').textContent = msg;
-}
-function hidePlayerError() {
-  document.getElementById('player-error').classList.remove('visible');
-}
-
-/* ═══════════════════════════════════════════════════
-   IPTV ENGINE
-═══════════════════════════════════════════════════ */
-const IPTV_URL = 'https://raw.githubusercontent.com/imShakil/tvlink/main/iptv.m3u8';
-let iptvAllChannels = [];
-let activeChannelEl = null;
-
-async function loadIPTV() {
-  document.getElementById('iptv-skeleton').style.display = 'flex';
-  document.getElementById('iptv-list').innerHTML = '';
-  document.getElementById('iptv-subtitle').textContent = 'Loading…';
-
-  try {
-    const proxied = APP.corsProxy + encodeURIComponent(IPTV_URL);
-    const res = await fetch(proxied);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    iptvAllChannels = parseM3U(text);
-    APP.iptvChannels = iptvAllChannels;
-
-    // Populate group filter
-    const groups = [...new Set(iptvAllChannels.map(c => c.group).filter(Boolean))].sort();
-    const select = document.getElementById('iptv-group-filter');
-    select.innerHTML = '<option value="">All Groups</option>';
-    groups.forEach(g => {
-      const opt = document.createElement('option');
-      opt.value = g; opt.textContent = g;
-      select.appendChild(opt);
-    });
-
-    document.getElementById('iptv-count').textContent = iptvAllChannels.length;
-    document.getElementById('iptv-subtitle').textContent = `${iptvAllChannels.length} channels`;
-    renderIPTV(iptvAllChannels);
-    showToast(`${iptvAllChannels.length} channels loaded`, 'success');
-  } catch(err) {
-    document.getElementById('iptv-subtitle').textContent = 'Load failed';
-    showToast('IPTV load failed: ' + err.message, 'error');
-    document.getElementById('iptv-skeleton').style.display = 'none';
-  }
-}
-
-function parseM3U(text) {
-  const lines = text.split('\n').map(l => l.trim());
-  const channels = [];
-  let current = null;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.startsWith('#EXTINF:')) {
-      current = { id: 'iptv-' + i, title: '', group: '', logo: '', url: '' };
-
-      // Parse name (after last comma)
-      const nameMatch = line.match(/,(.+)$/);
-      if (nameMatch) current.title = nameMatch[1].trim();
-
-      // Parse attributes
-      const groupMatch = line.match(/group-title="([^"]+)"/);
-      if (groupMatch) current.group = groupMatch[1];
-
-      const logoMatch = line.match(/tvg-logo="([^"]+)"/);
-      if (logoMatch) current.logo = logoMatch[1];
-
-      const nameAttr = line.match(/tvg-name="([^"]+)"/);
-      if (nameAttr && !current.title) current.title = nameAttr[1];
-
-    } else if (line && !line.startsWith('#') && current) {
-      current.url = line;
-      channels.push(current);
-      current = null;
-    }
-  }
-  return channels;
-}
-
-function renderIPTV(channels) {
-  document.getElementById('iptv-skeleton').style.display = 'none';
-  const list = document.getElementById('iptv-list');
-  list.innerHTML = '';
-
-  if (channels.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="7" width="20" height="13" rx="2"/></svg>
-        <p>No channels match your search.</p>
-      </div>
-    `;
-    return;
-  }
-
-  channels.forEach(ch => {
-    const el = document.createElement('div');
-    el.className = 'iptv-channel';
-    el.tabIndex = 0;
-    el.dataset.id = ch.id;
-
-    const abbr = ch.title.slice(0, 2).toUpperCase();
-    const iconHtml = ch.logo
-      ? `<img src="${ch.logo}" onerror="this.style.display='none';this.nextSibling.style.display='block'" loading="lazy" alt="">${abbr}`
-      : abbr;
-
-    el.innerHTML = `
-      <div class="channel-icon">${iconHtml}</div>
-      <div style="flex:1;min-width:0">
-        <div class="channel-name">${escHtml(ch.title)}</div>
-        ${ch.group ? `<div class="channel-group">${escHtml(ch.group)}</div>` : ''}
-      </div>
-      <div class="live-dot"></div>
-    `;
-
-    const play = () => {
-      if (activeChannelEl) activeChannelEl.classList.remove('live-active');
-      el.classList.add('live-active');
-      activeChannelEl = el;
-      openTheater({
-        id: ch.id,
-        title: ch.title,
-        type: 'hls',
-        url: ch.url,
-        sub: '',
-        thumb: ch.logo,
-      });
-    };
-
-    el.addEventListener('click', play);
-    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') play(); });
-    list.appendChild(el);
+    grid.appendChild(btn);
   });
 }
 
-function filterIPTV() {
-  const query = document.getElementById('iptv-search').value.toLowerCase();
-  const group = document.getElementById('iptv-group-filter').value;
-  const filtered = iptvAllChannels.filter(ch => {
-    const matchQ = !query || ch.title.toLowerCase().includes(query) || (ch.group||'').toLowerCase().includes(query);
-    const matchG = !group || ch.group === group;
-    return matchQ && matchG;
-  });
-  renderIPTV(filtered);
+// ─── UI HELPERS ───────────────────────────────────────────────────────────────
+function scrollToBottom(smooth = true) {
+  const c = document.getElementById('messages-container');
+  c.scrollTo({ top: c.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
 }
 
-/* ═══════════════════════════════════════════════════
-   LIBRARY / MEDIA MANAGEMENT
-═══════════════════════════════════════════════════ */
-function addMedia() {
-  const title = document.getElementById('inp-title').value.trim();
-  const type  = document.getElementById('inp-type').value;
-  const url   = document.getElementById('inp-url').value.trim();
-  const sub   = document.getElementById('inp-sub').value.trim();
-  const gas   = document.getElementById('inp-gas').value.trim();
-
-  if (!title || !url) { showToast('Title and URL are required', 'error'); return; }
-
-  const item = {
-    id: 'user-' + Date.now(),
-    title, type, url, sub,
-    addedAt: new Date().toISOString(),
-  };
-
-  if (gas) {
-    APP.user = APP.user || {};
-    APP.user.gasUrl = gas;
-    localStorage.setItem('cinema_gas_url', gas);
-    postToSheets(item, gas);
-  }
-
-  APP.library.push(item);
-  saveLibrary();
-  renderLibrary();
-  navigate('library');
-  showToast(`"${title}" added to library`, 'success');
-
-  // Clear form
-  ['inp-title','inp-url','inp-sub'].forEach(id => document.getElementById(id).value = '');
+function updateSendBtn() {
+  const val = document.getElementById('msg-input').value.trim();
+  document.getElementById('btn-send').disabled = !val && !pendingFile;
 }
 
-async function postToSheets(item, gasUrl) {
-  try {
-    await fetch(gasUrl, {
-      method: 'POST',
-      body: JSON.stringify(item),
-      headers: { 'Content-Type': 'application/json' },
-      mode: 'no-cors',
-    });
-    showToast('Saved to Google Sheets', 'success');
-  } catch(e) {
-    showToast('Sheets sync failed (offline?)', 'error');
-  }
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-async function syncFromSheets() {
-  const gasUrl = document.getElementById('inp-gas').value.trim()
-    || document.getElementById('set-gas-url').value.trim()
-    || (APP.user && APP.user.gasUrl);
-
-  if (!gasUrl) { showToast('Enter a Google Apps Script URL first', 'error'); return; }
-
-  showToast('Syncing from Google Sheets…');
-  try {
-    const res = await fetch(gasUrl + '?action=getPlaylist');
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      data.forEach(item => {
-        if (!APP.library.find(l => l.url === item.url)) {
-          APP.library.push({ ...item, id: 'gs-' + Date.now() + Math.random() });
-        }
-      });
-      saveLibrary();
-      renderLibrary();
-      showToast(`Synced ${data.length} items from Sheets`, 'success');
-    }
-  } catch(e) {
-    showToast('Sync failed: ' + e.message, 'error');
-  }
-}
-
-function loadDefaults() {
-  DEFAULT_LIBRARY.forEach(item => {
-    if (!APP.library.find(l => l.url === item.url)) {
-      APP.library.push({ ...item, addedAt: new Date().toISOString() });
-    }
-  });
-  saveLibrary();
-  renderLibrary();
-  navigate('library');
-  showToast('Test files loaded', 'success');
-}
-
-function saveLibrary() {
-  localStorage.setItem('cinema_library', JSON.stringify(APP.library));
-  document.getElementById('lib-count').textContent = APP.library.length;
-  document.getElementById('lib-subtitle').textContent = APP.library.length + ' items';
-  document.getElementById('stat-total').textContent = APP.library.length;
-}
-
-function renderLibrary() {
-  const grid = document.getElementById('media-grid');
-  const empty = document.getElementById('library-empty');
-  grid.innerHTML = '';
-
-  if (APP.library.length === 0) {
-    empty.style.display = 'flex';
-    document.getElementById('lib-count').textContent = '0';
-    document.getElementById('stat-total').textContent = '0';
-    return;
-  }
-
-  empty.style.display = 'none';
-  document.getElementById('lib-count').textContent = APP.library.length;
-  document.getElementById('lib-subtitle').textContent = APP.library.length + ' items';
-  document.getElementById('stat-total').textContent = APP.library.length;
-
-  APP.library.forEach((item, idx) => {
-    const card = document.createElement('div');
-    card.className = 'media-card';
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', `Play ${item.title}`);
-
-    const typeLabel = (item.type || 'MP4').toUpperCase();
-    const thumbHtml = item.thumb
-      ? `<img class="card-thumb-img" src="${item.thumb}" loading="lazy" alt="">`
-      : `<div class="card-thumb-placeholder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-         </div>`;
-
-    card.innerHTML = `
-      <div class="card-thumb">
-        ${thumbHtml}
-        <div class="card-overlay">
-          <div class="play-btn-overlay">
-            <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M5 3l14 9-14 9V3z"/></svg>
-          </div>
-        </div>
-        <div class="card-type-badge">${typeLabel}</div>
-      </div>
-      <div class="card-body">
-        <div class="card-title">${escHtml(item.title)}</div>
-        <div class="card-meta">
-          ${item.sub ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="2" y="2" width="8" height="4" rx="1"/><rect x="2" y="10" width="14" height="4" rx="1"/></svg> Subs' : ''}
-          <span style="margin-left:auto;font-size:10px">${item.addedAt ? new Date(item.addedAt).toLocaleDateString() : ''}</span>
-        </div>
-      </div>
-      <div class="card-actions">
-        <button class="icon-btn" title="Play" onclick="event.stopPropagation();openTheater(APP.library[${idx}])">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
-        </button>
-        <button class="icon-btn" title="Remove" onclick="event.stopPropagation();removeMedia(${idx})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        </button>
-      </div>
-    `;
-
-    const play = () => openTheater(item);
-    card.addEventListener('click', play);
-    card.addEventListener('keydown', e => { if (e.key === 'Enter') play(); });
-    grid.appendChild(card);
-  });
-}
-
-function removeMedia(idx) {
-  const item = APP.library[idx];
-  if (!confirm(`Remove "${item.title}"?`)) return;
-  APP.library.splice(idx, 1);
-  saveLibrary();
-  renderLibrary();
-  showToast(`"${item.title}" removed`);
-}
-
-/* ═══════════════════════════════════════════════════
-   AUTH / LOGIN
-═══════════════════════════════════════════════════ */
-function showLoginModal() {
-  document.getElementById('login-modal').style.display = 'flex';
-}
-
-async function loginWithSheets() {
-  const name = document.getElementById('login-name').value.trim() || 'User';
-  const gasUrl = document.getElementById('login-gas-url').value.trim();
-
-  APP.user = { name, gasUrl };
-  APP.isGuest = false;
-  localStorage.setItem('cinema_user', JSON.stringify(APP.user));
-  if (gasUrl) localStorage.setItem('cinema_gas_url', gasUrl);
-
-  document.getElementById('user-name').textContent = name;
-  document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
-  document.getElementById('mode-label').textContent = 'Connected';
-  document.getElementById('mode-chip').classList.add('active');
-  document.getElementById('stat-backend').textContent = 'Connected';
-  document.getElementById('stat-backend-sub').textContent = gasUrl ? 'Sheets linked' : 'No URL';
-
-  document.getElementById('login-modal').style.display = 'none';
-  if (gasUrl) await syncFromSheets();
-  if (APP.library.length === 0) loadDefaults();
-  loadIPTV();
-  showToast(`Welcome, ${name}!`, 'success');
-}
-
-function enterGuestMode() {
-  APP.isGuest = true;
-  APP.user = { name: 'Guest', gasUrl: null };
-
-  document.getElementById('user-name').textContent = 'Guest Mode';
-  document.getElementById('user-avatar').textContent = 'G';
-  document.getElementById('mode-label').textContent = 'Guest';
-  document.getElementById('stat-backend').textContent = 'Guest';
-  document.getElementById('stat-backend-sub').textContent = 'No backend';
-
-  document.getElementById('login-modal').style.display = 'none';
-  if (APP.library.length === 0) loadDefaults();
-  loadIPTV();
-  showToast('Guest Mode active. Test content loaded.');
-}
-
-/* ═══════════════════════════════════════════════════
-   SETTINGS
-═══════════════════════════════════════════════════ */
-function saveSettings() {
-  const proxy = document.getElementById('set-cors-proxy').value.trim();
-  const hlsBuf = parseInt(document.getElementById('set-hls-buffer').value);
-  const gasUrl = document.getElementById('set-gas-url').value.trim();
-
-  if (proxy) { APP.corsProxy = proxy; localStorage.setItem('cinema_cors_proxy', proxy); }
-  if (!isNaN(hlsBuf)) { APP.hlsBufferSecs = hlsBuf; localStorage.setItem('cinema_hls_buf', hlsBuf); }
-  if (gasUrl) { if (!APP.user) APP.user = {}; APP.user.gasUrl = gasUrl; localStorage.setItem('cinema_gas_url', gasUrl); }
-
-  showToast('Settings saved', 'success');
-}
-
-function clearAllData() {
-  if (!confirm('Clear all library data and settings?')) return;
-  localStorage.clear();
-  APP.library = [];
-  renderLibrary();
-  showToast('All data cleared');
-}
-
-/* ═══════════════════════════════════════════════════
-   NAVIGATION
-═══════════════════════════════════════════════════ */
-function navigate(pageId) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-
-  const page = document.getElementById('page-' + pageId);
-  if (page) page.classList.add('active');
-
-  const navItem = document.querySelector(`.nav-item[data-page="${pageId}"]`);
-  if (navItem) navItem.classList.add('active');
-
-  if (pageId === 'live-tv' && iptvAllChannels.length === 0) loadIPTV();
-}
-
-// Nav rail click
-document.getElementById('nav-rail').addEventListener('click', e => {
-  const item = e.target.closest('.nav-item');
-  if (item) navigate(item.dataset.page);
-});
-document.getElementById('nav-rail').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const item = e.target.closest('.nav-item');
-    if (item) navigate(item.dataset.page);
-  }
-});
-
-/* ═══════════════════════════════════════════════════
-   TV DPAD / KEYBOARD NAVIGATION
-═══════════════════════════════════════════════════ */
-function setupKeyboardNav() {
-  document.addEventListener('keydown', e => {
-    // Theater controls
-    if (PLAYBACK.active) {
-      showControls();
-      switch(e.key) {
-        case ' ': case 'k': e.preventDefault(); togglePlayPause(); break;
-        case 'ArrowLeft': case 'j': skipBack(); break;
-        case 'ArrowRight': case 'l': skipForward(); break;
-        case 'ArrowUp': setVolume(Math.min(100, PLAYBACK.volume + 10)); document.getElementById('vol-slider').value = PLAYBACK.volume; break;
-        case 'ArrowDown': setVolume(Math.max(0, PLAYBACK.volume - 10)); document.getElementById('vol-slider').value = PLAYBACK.volume; break;
-        case 'f': case 'F': toggleFullscreen(); break;
-        case 'Escape': closeTheater(); break;
-        case 'm': case 'M': toggleMute(); break;
-        case 't': case 'T': toggleTracks(); break;
-      }
-      return;
-    }
-
-    // General DPAD nav
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      const focusable = Array.from(document.querySelectorAll('[tabindex="0"]:not([disabled])'))
-        .filter(el => el.offsetParent !== null);
-      const current = document.activeElement;
-      const idx = focusable.indexOf(current);
-      if (idx !== -1) {
-        const next = e.key === 'ArrowDown' ? focusable[idx + 1] : focusable[idx - 1];
-        if (next) { e.preventDefault(); next.focus(); }
-      } else if (focusable.length) {
-        focusable[0].focus();
-      }
-    }
-  });
-}
-
-/* ═══════════════════════════════════════════════════
-   TOAST NOTIFICATIONS
-═══════════════════════════════════════════════════ */
-function showToast(msg, type = '') {
+// ─── TOAST SYSTEM ─────────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
+  const colors = {
+    info: 'bg-surface-700 border-white/10 text-gray-100',
+    success: 'bg-teal-500/20 border-teal-500/30 text-teal-200',
+    error: 'bg-red-500/15 border-red-500/25 text-red-300',
+  };
+  const icons = {
+    info: `<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+    success: `<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
+    error: `<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,
+  };
+
   const toast = document.createElement('div');
-  toast.className = 'toast ' + type;
-
-  const icon = type === 'error'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>'
-    : type === 'success'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>';
-
-  toast.innerHTML = icon + escHtml(msg);
+  toast.className = `flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-sm font-medium shadow-2xl pointer-events-auto animate-toast-in ${colors[type]}`;
+  toast.style.backdropFilter = 'blur(20px)';
+  toast.style.webkitBackdropFilter = 'blur(20px)';
+  toast.innerHTML = `${icons[type]}<span>${message}</span>`;
   container.appendChild(toast);
 
   setTimeout(() => {
-    toast.style.animation = 'toast-out 300ms ease forwards';
+    toast.classList.add('animate-toast-out');
     setTimeout(() => toast.remove(), 300);
-  }, 3500);
+  }, 3000);
 }
 
-/* ═══════════════════════════════════════════════════
-   UTILITIES
-═══════════════════════════════════════════════════ */
-function escHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ─── CONFIRM MODAL ────────────────────────────────────────────────────────────
+let confirmCallback = null;
+function showConfirm(title, body, cb) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent = body;
+  confirmCallback = cb;
+  document.getElementById('confirm-modal').classList.remove('hidden');
 }
 
-// Periodic VLC state sync (if VLC is active)
-setInterval(() => {
-  if (VLC_ENGINE.usingVLC && VLC_ENGINE.instance) {
-    try {
-      const p = VLC_ENGINE.instance;
-      PLAYBACK.currentTime = p.time / 1000;
-      PLAYBACK.duration = p.length / 1000;
-      BW.bufferedSecs = PLAYBACK.duration - PLAYBACK.currentTime;
-      updateProgressUI();
-      updateTimeDisplay();
-    } catch(e) {}
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  document.getElementById('confirm-modal').classList.add('hidden');
+  confirmCallback = null;
+});
+document.getElementById('modal-confirm').addEventListener('click', async () => {
+  document.getElementById('confirm-modal').classList.add('hidden');
+  if (confirmCallback) await confirmCallback();
+  confirmCallback = null;
+});
+
+// ─── EVENT BINDINGS ──────────────────────────────────────────────────────────
+document.getElementById('btn-send').addEventListener('click', sendMessage);
+
+document.getElementById('msg-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+document.getElementById('msg-input').addEventListener('input', updateSendBtn);
+
+document.getElementById('btn-emoji').addEventListener('click', () => {
+  const picker = document.getElementById('emoji-picker');
+  picker.classList.toggle('hidden');
+});
+
+document.getElementById('btn-mic').addEventListener('click', toggleVoice);
+
+document.getElementById('btn-nuke').addEventListener('click', nukeConversation);
+
+document.getElementById('file-input').addEventListener('change', (e) => {
+  handleFileSelect(e.target.files[0]);
+});
+
+document.getElementById('btn-cancel-file').addEventListener('click', clearPendingFile);
+
+// Share modal
+document.getElementById('btn-share').addEventListener('click', () => {
+  document.getElementById('share-url-text').textContent = window.location.href;
+  document.getElementById('share-modal').classList.remove('hidden');
+});
+document.getElementById('close-share-modal').addEventListener('click', () => {
+  document.getElementById('share-modal').classList.add('hidden');
+});
+document.getElementById('share-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('share-modal'))
+    document.getElementById('share-modal').classList.add('hidden');
+});
+document.getElementById('copy-share-url').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(window.location.href);
+  showToast('🔗 Invite link copied!', 'success');
+});
+
+document.getElementById('empty-share-btn').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(window.location.href);
+  showToast('🔗 Invite link copied!', 'success');
+});
+
+// Close emoji picker on outside click
+document.addEventListener('click', (e) => {
+  const picker = document.getElementById('emoji-picker');
+  const btn = document.getElementById('btn-emoji');
+  if (!picker.classList.contains('hidden') && !picker.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+    picker.classList.add('hidden');
   }
-}, 250);
+});
+
+// Hash change support
+window.addEventListener('hashchange', () => {
+  if (unsubscribe) unsubscribe();
+  document.getElementById('messages-container').querySelectorAll('.message-wrapper').forEach(el => el.remove());
+  const emptyState = document.getElementById('empty-state');
+  if (emptyState) emptyState.style.display = '';
+  initSession();
+});
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+buildEmojiGrid();
+initVoice();
+initSession();
 </script>
 </body>
 </html>
