@@ -7,7 +7,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&family=Tiro+Bangla&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
 <script>
   tailwind.config = {
@@ -17,7 +17,7 @@
         fontFamily: {
           sans: ['DM Sans', 'sans-serif'],
           mono: ['JetBrains Mono', 'monospace'],
-          bangla: ['Anek Bangla', 'Tiro Bangla', 'sans-serif'],
+          bangla: ['Tiro Bangla', 'sans-serif'],
         },
         colors: {
           surface: {
@@ -260,6 +260,17 @@
     color: #2dd4bf;
   }
 
+  .online-badge {
+    background: rgba(45, 212, 191, 0.12);
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    color: #2dd4bf;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .online-badge:hover {
+    background: rgba(45, 212, 191, 0.2);
+  }
+
   img.msg-image { max-height: 280px; width: auto; max-width: 100%; object-fit: cover; border-radius: 12px; }
 
   .typing-dot {
@@ -353,6 +364,17 @@
   .msg-text-content {
     word-break: break-word;
   }
+
+  /* Tiro Bangla on input */
+  #msg-input {
+    font-family: 'Tiro Bangla', 'DM Sans', sans-serif;
+  }
+
+  /* Pending sync indicator */
+  .sync-pending {
+    display: inline-block;
+    animation: pulseDot 1.4s ease-in-out infinite;
+  }
 </style>
 </head>
 <body class="dark noise-bg">
@@ -415,6 +437,12 @@
   </div>
 </div>
 
+<!-- ONLINE USERS POPOVER -->
+<div id="online-popover" class="hidden fixed z-50 glass rounded-xl p-3 shadow-2xl animate-pop-in max-w-[220px]" style="pointer-events:auto;">
+  <p class="text-xs font-semibold text-white mb-1.5">Online Now</p>
+  <p id="online-names-list" class="text-xs text-teal-300 leading-relaxed"></p>
+</div>
+
 <!-- MAIN APP -->
 <div class="relative z-10 flex flex-col max-w-2xl mx-auto" style="height:100vh;height:100dvh;">
 
@@ -428,15 +456,21 @@
     </div>
     <div class="flex-1 min-w-0">
       <h1 class="font-semibold text-white text-sm tracking-tight">CipherChat</h1>
-      <div class="flex items-center gap-1.5 mt-0.5">
+      <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
         <span class="chip encrypt-badge text-xs">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           E2EE · AES-GCM
         </span>
         <span id="room-id-badge" class="chip text-xs truncate max-w-[100px] hidden"></span>
+        <span id="online-pill" class="chip online-badge text-xs hidden" title="Click to see online users">
+          🟢 <span id="online-count">0</span> Online
+        </span>
       </div>
     </div>
     <div class="flex items-center gap-1">
+      <button id="btn-clear" class="btn-icon" title="Clear for Me" style="color:#fbbf24;">
+        <svg xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      </button>
       <button id="btn-share" class="btn-icon" title="Invite">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
       </button>
@@ -505,7 +539,7 @@
         rows="1"
         placeholder="Type an encrypted message…"
         class="w-full bg-transparent text-sm text-white placeholder-gray-500 leading-relaxed max-h-28 overflow-y-auto py-0.5"
-        style="field-sizing: content; min-height: 22px;"
+        style="field-sizing: content; min-height: 22px; font-family: 'Tiro Bangla', 'DM Sans', sans-serif;"
       ></textarea>
       <div class="flex items-center gap-1">
         <button id="btn-emoji" class="btn-icon" title="Emoji">
@@ -601,16 +635,18 @@ let roomId = null;
 let cryptoKey = null;
 let rawKeyHex = null;
 let unsubscribe = null;
-let unsubscribeTyping = null;
+let unsubscribePresence = null;
 let pendingFile = null;
 let sentMessageIds = new Set();
 let nickname = null;
 let typingDebounceTimer = null;
 let activeReactionPill = null;
+let heartbeatInterval = null;
+let activeNicknames = []; // tracks presence nicknames
 
 const LOCAL_SENDER_ID = (() => {
-  let id = sessionStorage.getItem('_cid');
-  if (!id) { id = Math.random().toString(36).slice(2, 10); sessionStorage.setItem('_cid', id); }
+  let id = localStorage.getItem('_cid');
+  if (!id) { id = Math.random().toString(36).slice(2, 10); localStorage.setItem('_cid', id); }
   return id;
 })();
 
@@ -620,9 +656,27 @@ function containsBangla(text) {
   return BANGLA_REGEX.test(text);
 }
 
-// ─── NICKNAME SYSTEM ─────────────────────────────────────────────────────────
+// ─── CLEARED-AT HELPERS (Clear for Me) ────────────────────────────────────────
+function getClearedAt() {
+  if (!roomId) return 0;
+  const val = localStorage.getItem(`room_${roomId}_clearedAt`);
+  return val ? parseInt(val, 10) : 0;
+}
+
+function setClearedAt() {
+  if (!roomId) return;
+  localStorage.setItem(`room_${roomId}_clearedAt`, Date.now().toString());
+}
+
+function isMessageCleared(msgTimestampMs) {
+  const clearedAt = getClearedAt();
+  if (clearedAt === 0) return false;
+  return msgTimestampMs > 0 && msgTimestampMs < clearedAt;
+}
+
+// ─── NICKNAME SYSTEM (Persistent via localStorage) ───────────────────────────
 function initNickname() {
-  const stored = sessionStorage.getItem('_nickname');
+  const stored = localStorage.getItem('_nickname');
   if (stored) {
     nickname = stored;
     document.getElementById('nickname-modal').classList.add('hidden');
@@ -650,12 +704,39 @@ function initNickname() {
   setTimeout(() => input.focus(), 300);
 }
 
-function submitNickname() {
+async function submitNickname() {
   const input = document.getElementById('nickname-input');
   const val = input.value.trim();
   if (!val) return;
-  nickname = val;
-  sessionStorage.setItem('_nickname', nickname);
+
+  // Check for nickname collision in presence doc and deduplicate
+  let finalNickname = val;
+  try {
+    if (roomId) {
+      const presenceSnap = await getDocs(collection(db, 'rooms', roomId, 'status'));
+      // We only need the presence doc
+      const presenceDocRef = doc(db, 'rooms', roomId, 'status', 'presence');
+      const snap = await (async () => {
+        const { getDoc } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js");
+        return getDoc(presenceDocRef);
+      })();
+      if (snap.exists()) {
+        const data = snap.data();
+        const now = Date.now();
+        const activeNicks = Object.entries(data)
+          .filter(([key, val]) => key !== '_meta' && val && val.nickname && (now - val.lastActive < 25000) && key !== LOCAL_SENDER_ID)
+          .map(([, val]) => val.nickname);
+        if (activeNicks.includes(finalNickname)) {
+          finalNickname = finalNickname + ' (2)';
+        }
+      }
+    }
+  } catch(e) {
+    // If we can't check, proceed with original nickname
+  }
+
+  nickname = finalNickname;
+  localStorage.setItem('_nickname', nickname);
   document.getElementById('nickname-modal').classList.add('hidden');
   initSession();
 }
@@ -686,7 +767,8 @@ async function initSession() {
   document.getElementById('share-url-text').textContent = window.location.href;
 
   subscribeMessages();
-  subscribeTypingStatus();
+  subscribePresence();
+  startHeartbeat();
 }
 
 // ─── FIRESTORE MESSAGE LISTENER ──────────────────────────────────────────────
@@ -697,9 +779,32 @@ function subscribeMessages() {
   if (unsubscribe) unsubscribe();
 
   unsubscribe = onSnapshot(q, async (snapshot) => {
+    let visibleCount = 0;
     for (const change of snapshot.docChanges()) {
+      const data = change.doc.data();
+      const docId = change.doc.id;
+
+      // Compute message timestamp in ms for "Clear for Me" filtering
+      let msgTsMs = 0;
+      if (data.ts) {
+        if (data.ts.toDate) {
+          msgTsMs = data.ts.toDate().getTime();
+        } else if (data._localTs) {
+          msgTsMs = data._localTs;
+        }
+      }
+
+      // Filter out cleared messages
+      if (isMessageCleared(msgTsMs)) {
+        // Remove if already rendered
+        const el = document.getElementById(`msg-${docId}`);
+        if (el) el.remove();
+        continue;
+      }
+
       if (change.type === 'added') {
         await renderMessage(change.doc);
+        visibleCount++;
       } else if (change.type === 'modified') {
         await updateMessageReactions(change.doc);
       } else if (change.type === 'removed') {
@@ -713,63 +818,152 @@ function subscribeMessages() {
       }
     }
     const empty = document.getElementById('empty-state');
-    if (snapshot.size > 0 && empty) {
+    // Count visible message elements
+    const msgEls = document.getElementById('messages-container').querySelectorAll('.message-wrapper');
+    if (msgEls.length > 0 && empty) {
       empty.style.display = 'none';
-    } else if (snapshot.size === 0 && empty) {
+    } else if (msgEls.length === 0 && empty) {
       empty.style.display = '';
     }
     scrollToBottom();
   });
 }
 
-// ─── TYPING STATUS ───────────────────────────────────────────────────────────
-function subscribeTypingStatus() {
-  if (unsubscribeTyping) unsubscribeTyping();
-  const typingDocRef = doc(db, 'rooms', roomId, 'status', 'typing');
-  unsubscribeTyping = onSnapshot(typingDocRef, (snap) => {
+// ─── PRESENCE SYSTEM (Heartbeat) ─────────────────────────────────────────────
+function subscribePresence() {
+  if (unsubscribePresence) unsubscribePresence();
+  const presenceDocRef = doc(db, 'rooms', roomId, 'status', 'presence');
+
+  unsubscribePresence = onSnapshot(presenceDocRef, (snap) => {
     if (!snap.exists()) {
+      activeNicknames = [];
       hideTypingIndicator();
+      updateOnlinePill();
       return;
     }
     const data = snap.data();
-    // Filter out current user
-    const otherTyping = Object.entries(data).filter(([key]) => key !== LOCAL_SENDER_ID && key !== '_meta');
+    const now = Date.now();
+    const PRESENCE_TIMEOUT = 25000; // 25 seconds
+
+    // Build list of active users (excluding stale ones and self for typing indicator)
+    const activeUsers = [];
+    const otherTyping = [];
+
+    for (const [key, val] of Object.entries(data)) {
+      if (key === '_meta' || !val || !val.lastActive) continue;
+      const age = now - val.lastActive;
+      if (age < PRESENCE_TIMEOUT) {
+        activeUsers.push({ id: key, nickname: val.nickname || 'Someone', lastActive: val.lastActive, typing: val.typing || false });
+        if (key !== LOCAL_SENDER_ID && val.typing) {
+          otherTyping.push(val.nickname || 'Someone');
+        }
+      }
+      // Stale entries are ignored, not rendered
+    }
+
+    activeNicknames = activeUsers.map(u => u.nickname);
+    updateOnlinePill();
+
+    // Typing indicator
     if (otherTyping.length === 0) {
       hideTypingIndicator();
     } else {
-      const names = otherTyping.map(([, val]) => val.nickname || 'Someone');
-      showTypingIndicator(names);
+      showTypingIndicator(otherTyping);
     }
   });
 }
 
+function startHeartbeat() {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+
+  // Fire immediately
+  sendHeartbeat();
+
+  // Then every 10 seconds
+  heartbeatInterval = setInterval(() => {
+    sendHeartbeat();
+  }, 10000);
+}
+
+async function sendHeartbeat() {
+  if (!roomId || !cryptoKey) return;
+  const presenceDocRef = doc(db, 'rooms', roomId, 'status', 'presence');
+  try {
+    await setDoc(presenceDocRef, {
+      [LOCAL_SENDER_ID]: {
+        nickname: nickname || 'Anonymous',
+        lastActive: Date.now(),
+        typing: false
+      }
+    }, { merge: true });
+  } catch(e) {
+    // Silently ignore presence errors
+  }
+}
+
+function updateOnlinePill() {
+  const pill = document.getElementById('online-pill');
+  const countEl = document.getElementById('online-count');
+  const count = activeNicknames.length;
+  if (count > 0) {
+    countEl.textContent = count;
+    pill.classList.remove('hidden');
+  } else {
+    pill.classList.add('hidden');
+  }
+}
+
+// Online pill click handler — show popover with nicknames
+function showOnlinePopover() {
+  const pill = document.getElementById('online-pill');
+  const popover = document.getElementById('online-popover');
+  const namesList = document.getElementById('online-names-list');
+
+  if (activeNicknames.length === 0) {
+    namesList.textContent = 'No one online';
+  } else {
+    namesList.textContent = activeNicknames.join(', ');
+  }
+
+  const rect = pill.getBoundingClientRect();
+  popover.style.left = `${Math.max(8, rect.left)}px`;
+  popover.style.top = `${rect.bottom + 6}px`;
+  popover.classList.remove('hidden');
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', hideOnlinePopoverOnOutside, { once: true });
+    document.addEventListener('touchstart', hideOnlinePopoverOnOutside, { once: true });
+  }, 50);
+}
+
+function hideOnlinePopoverOnOutside(e) {
+  const popover = document.getElementById('online-popover');
+  const pill = document.getElementById('online-pill');
+  if (!popover.contains(e.target) && !pill.contains(e.target)) {
+    popover.classList.add('hidden');
+  }
+}
+
 async function setTypingStatus(isTyping) {
   if (!roomId || !cryptoKey) return;
-  const typingDocRef = doc(db, 'rooms', roomId, 'status', 'typing');
+  const presenceDocRef = doc(db, 'rooms', roomId, 'status', 'presence');
   try {
-    if (isTyping) {
-      const encNickname = await Crypto.encrypt(nickname || 'Anonymous', cryptoKey);
-      await setDoc(typingDocRef, {
-        [LOCAL_SENDER_ID]: { nickname: nickname || 'Anonymous', ts: Date.now() }
-      }, { merge: true });
-    } else {
-      await setDoc(typingDocRef, {
-        [LOCAL_SENDER_ID]: {}
-      }, { merge: true });
-    }
+    await setDoc(presenceDocRef, {
+      [LOCAL_SENDER_ID]: {
+        nickname: nickname || 'Anonymous',
+        lastActive: Date.now(),
+        typing: isTyping
+      }
+    }, { merge: true });
   } catch(e) {
     // Silently ignore typing status errors
   }
 }
 
 function handleTypingInput() {
-  // Clear any existing debounce timer
   if (typingDebounceTimer) clearTimeout(typingDebounceTimer);
-
-  // Set typing status to true
   setTypingStatus(true);
-
-  // Debounce: remove typing status after 2.5 seconds of inactivity
   typingDebounceTimer = setTimeout(() => {
     setTypingStatus(false);
   }, 2500);
@@ -800,14 +994,19 @@ window.addEventListener('blur', () => {
   setTypingStatus(false);
 });
 
-// Clean up typing before page unload
+// Clean up before page unload
 window.addEventListener('beforeunload', () => {
   if (roomId) {
-    const typingDocRef = doc(db, 'rooms', roomId, 'status', 'typing');
-    // Use navigator.sendBeacon is not available for Firestore,
-    // so we do a best-effort setDoc with merge
-    setDoc(typingDocRef, { [LOCAL_SENDER_ID]: {} }, { merge: true }).catch(() => {});
+    const presenceDocRef = doc(db, 'rooms', roomId, 'status', 'presence');
+    setDoc(presenceDocRef, {
+      [LOCAL_SENDER_ID]: {
+        nickname: nickname || 'Anonymous',
+        lastActive: Date.now(),
+        typing: false
+      }
+    }, { merge: true }).catch(() => {});
   }
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
 });
 
 // ─── RENDER MESSAGE ──────────────────────────────────────────────────────────
@@ -817,12 +1016,26 @@ async function renderMessage(docSnap) {
 
   // If element already exists, update it
   if (existingEl) {
-    // Update timestamp
+    // Update timestamp (prefer server time if available)
     if (data.ts?.toDate) {
       const newTimeStr = new Intl.DateTimeFormat([], {hour:'2-digit',minute:'2-digit'}).format(data.ts.toDate());
       const tsSpan = existingEl.querySelector('.msg-timestamp');
       if (tsSpan) tsSpan.textContent = newTimeStr;
     }
+
+    // Update sync indicator on modified events
+    const isPending = docSnap.metadata && docSnap.metadata.hasPendingWrites;
+    const syncIcon = existingEl.querySelector('.sync-icon');
+    if (syncIcon) {
+      if (isPending) {
+        syncIcon.innerHTML = '&#128339;'; // 🕒 clock
+        syncIcon.className = 'sync-icon sync-pending text-xs';
+      } else {
+        syncIcon.innerHTML = '&#10003;'; // ✓ check
+        syncIcon.className = 'sync-icon text-xs';
+      }
+    }
+
     // Update reactions if present
     await renderReactionsOnElement(existingEl, data);
     return;
@@ -847,7 +1060,21 @@ async function renderMessage(docSnap) {
   wrapper.id = `msg-${docSnap.id}`;
   wrapper.className = `message-wrapper flex ${isMine ? 'justify-end' : 'justify-start'} animate-slide-up mb-1.5`;
 
-  const timeStr = data.ts?.toDate ? new Intl.DateTimeFormat([], {hour:'2-digit',minute:'2-digit'}).format(data.ts.toDate()) : '';
+  // Optimistic UI: use local time if server timestamp hasn't resolved yet
+  let timeStr = '';
+  const isPending = docSnap.metadata && docSnap.metadata.hasPendingWrites;
+  if (data.ts?.toDate) {
+    timeStr = new Intl.DateTimeFormat([], {hour:'2-digit',minute:'2-digit'}).format(data.ts.toDate());
+  } else if (data._localTs) {
+    timeStr = new Intl.DateTimeFormat([], {hour:'2-digit',minute:'2-digit'}).format(new Date(data._localTs));
+  }
+
+  // Sync icon: 🕒 for pending, ✓ for confirmed
+  const syncIconHtml = isMine
+    ? (isPending
+      ? `<span class="sync-icon sync-pending text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">&#128339;</span>`
+      : `<span class="sync-icon text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">&#10003;</span>`)
+    : '';
 
   let bubble = '';
 
@@ -874,6 +1101,7 @@ async function renderMessage(docSnap) {
             </div>
           </div>
           <div class="px-3 py-1.5 flex items-center justify-end gap-1.5">
+            ${syncIconHtml}
             <span class="msg-timestamp text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">${timeStr}</span>
           </div>
           <div class="reactions-container"></div>
@@ -895,7 +1123,8 @@ async function renderMessage(docSnap) {
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 ${isMine ? 'text-white' : 'text-gray-300'}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             </button>
           </div>
-          <div class="flex items-center justify-end mt-1.5">
+          <div class="flex items-center justify-end mt-1.5 gap-1">
+            ${syncIconHtml}
             <span class="msg-timestamp text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">${timeStr}</span>
           </div>
           <div class="reactions-container"></div>
@@ -912,8 +1141,8 @@ async function renderMessage(docSnap) {
         ${senderNameHtml}
         <p class="msg-text-content text-sm ${isMine ? 'text-white' : 'text-gray-100'} leading-relaxed break-words ${banglaClass}">${escapedText}</p>
         <div class="flex items-center justify-end gap-1 mt-1">
+          ${syncIconHtml}
           <span class="msg-timestamp text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">${timeStr}</span>
-          ${isMine ? `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` : ''}
         </div>
         <div class="reactions-container"></div>
       </div>`;
@@ -943,16 +1172,28 @@ async function renderMessage(docSnap) {
   attachReactionListeners(wrapper, docSnap.id);
 }
 
-// ─── UPDATE MESSAGE (for modified docs — reactions) ──────────────────────────
+// ─── UPDATE MESSAGE (for modified docs — reactions + sync state) ──────────────
 async function updateMessageReactions(docSnap) {
   const data = docSnap.data();
   const existingEl = document.getElementById(`msg-${docSnap.id}`);
   if (existingEl) {
+    // Update sync indicator
+    const isPending = docSnap.metadata && docSnap.metadata.hasPendingWrites;
+    const syncIcon = existingEl.querySelector('.sync-icon');
+    if (syncIcon) {
+      if (isPending) {
+        syncIcon.innerHTML = '&#128339;'; // 🕒 clock
+        syncIcon.className = 'sync-icon sync-pending text-xs';
+      } else {
+        syncIcon.innerHTML = '&#10003;'; // ✓ check
+        syncIcon.className = 'sync-icon text-xs';
+      }
+    }
     await renderReactionsOnElement(existingEl, data);
   }
 }
 
-// ─── REACTIONS RENDERING ─────────────────────────────────────────────────────
+// ─── REACTIONS RENDERING (with nickname tooltips) ────────────────────────────
 async function renderReactionsOnElement(wrapperEl, data) {
   const reactionsContainer = wrapperEl.querySelector('.reactions-container');
   if (!reactionsContainer) return;
@@ -962,14 +1203,16 @@ async function renderReactionsOnElement(wrapperEl, data) {
     return;
   }
 
-  // Aggregate reactions: emoji -> count + highlight if mine
+  // Aggregate reactions: emoji -> count + highlight if mine + nicknames for tooltip
   const emojiMap = {};
   for (const [uid, val] of Object.entries(data.reactions)) {
     if (!val || !val.emoji) continue;
     if (!emojiMap[val.emoji]) {
-      emojiMap[val.emoji] = { count: 0, isMine: false };
+      emojiMap[val.emoji] = { count: 0, isMine: false, nicknames: [] };
     }
     emojiMap[val.emoji].count++;
+    const nick = val.nickname || 'Someone';
+    emojiMap[val.emoji].nicknames.push(nick);
     if (uid === LOCAL_SENDER_ID) {
       emojiMap[val.emoji].isMine = true;
     }
@@ -978,7 +1221,8 @@ async function renderReactionsOnElement(wrapperEl, data) {
   let html = '<div class="flex flex-wrap gap-1 mt-1">';
   for (const [emoji, info] of Object.entries(emojiMap)) {
     const highlight = info.isMine ? 'border-accent-500/40 bg-accent-500/10' : '';
-    html += `<button class="reaction-badge ${highlight}" onclick="reactToMessage('${data._docId || ''}', '${emoji}')">${emoji}<span class="react-count">${info.count > 1 ? info.count : ''}</span></button>`;
+    const titleAttr = escHtml(info.nicknames.join(', '));
+    html += `<button class="reaction-badge ${highlight}" title="${titleAttr}" onclick="reactToMessage('${data._docId || ''}', '${emoji}')">${emoji}<span class="react-count">${info.count > 1 ? info.count : ''}</span></button>`;
   }
   html += '</div>';
   reactionsContainer.innerHTML = html;
@@ -996,12 +1240,9 @@ function attachReactionListeners(wrapperEl, msgId) {
 
     // Long press (mobile)
     let pressTimer = null;
-    let longPressed = false;
 
     bubble.addEventListener('touchstart', (e) => {
-      longPressed = false;
       pressTimer = setTimeout(() => {
-        longPressed = true;
         e.preventDefault();
         openReactionPill(bubble, msgId);
       }, 500);
@@ -1021,7 +1262,6 @@ function attachReactionListeners(wrapperEl, msgId) {
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 function openReactionPill(bubbleEl, msgId) {
-  // Close any existing pill
   closeReactionPill();
 
   const pill = document.createElement('div');
@@ -1041,12 +1281,10 @@ function openReactionPill(bubbleEl, msgId) {
 
   // Position the pill above the bubble
   const bubbleRect = bubbleEl.getBoundingClientRect();
-  const parentContainer = bubbleEl.closest('.message-wrapper') || bubbleEl.parentElement;
 
   pill.style.position = 'fixed';
   pill.style.left = `${Math.max(8, Math.min(bubbleRect.left, window.innerWidth - 280))}px`;
 
-  // If the bubble is in the top half, show pill below; otherwise above
   if (bubbleRect.top < 120) {
     pill.style.top = `${bubbleRect.bottom + 6}px`;
   } else {
@@ -1057,7 +1295,6 @@ function openReactionPill(bubbleEl, msgId) {
   document.body.appendChild(pill);
   activeReactionPill = pill;
 
-  // Close pill on outside click
   setTimeout(() => {
     document.addEventListener('click', closeReactionPillOnOutside, { once: true });
     document.addEventListener('touchstart', closeReactionPillOnOutside, { once: true });
@@ -1082,8 +1319,6 @@ window.reactToMessage = async (msgId, emoji) => {
   if (!msgId || !cryptoKey) return;
   try {
     const msgDocRef = doc(db, 'rooms', roomId, 'messages', msgId);
-    // Use updateDoc to set the reaction for this user
-    // reactions: { [userId]: { emoji, nickname } }
     await updateDoc(msgDocRef, {
       [`reactions.${LOCAL_SENDER_ID}`]: { emoji, nickname: nickname || 'Anonymous' }
     });
@@ -1092,7 +1327,7 @@ window.reactToMessage = async (msgId, emoji) => {
   }
 };
 
-// ─── SEND MESSAGE ────────────────────────────────────────────────────────────
+// ─── SEND MESSAGE (with optimistic local timestamp) ──────────────────────────
 async function sendMessage() {
   const input = document.getElementById('msg-input');
   const text = input.value.trim();
@@ -1103,7 +1338,8 @@ async function sendMessage() {
   sendBtn.disabled = true;
 
   try {
-    const payload = { sender: LOCAL_SENDER_ID, ts: serverTimestamp() };
+    const localTs = Date.now();
+    const payload = { sender: LOCAL_SENDER_ID, ts: serverTimestamp(), _localTs: localTs };
 
     // Encrypt and attach nickname
     payload.senderName = await Crypto.encrypt(nickname || 'Anonymous', cryptoKey);
@@ -1148,6 +1384,18 @@ window.deleteMessage = async (msgId) => {
   }
 };
 
+// ─── CLEAR FOR ME ────────────────────────────────────────────────────────────
+function clearForMe() {
+  setClearedAt();
+  // Remove all currently rendered messages from the DOM
+  const container = document.getElementById('messages-container');
+  container.querySelectorAll('.message-wrapper').forEach(el => el.remove());
+  // Show empty state
+  const emptyState = document.getElementById('empty-state');
+  if (emptyState) emptyState.style.display = '';
+  showToast('Chat cleared for you', 'success');
+}
+
 // ─── NUKE CONVERSATION ───────────────────────────────────────────────────────
 async function nukeConversation() {
   showConfirm(
@@ -1155,14 +1403,38 @@ async function nukeConversation() {
     'All messages will be permanently erased from the database. This cannot be undone.',
     async () => {
       try {
+        // Step 1: Delete all messages in the subcollection
         const msgsRef = collection(db, 'rooms', roomId, 'messages');
         const snap = await getDocs(msgsRef);
-        const batch = writeBatch(db);
-        snap.docs.forEach(d => batch.delete(d.ref));
-        // Also delete the typing status doc
-        batch.delete(doc(db, 'rooms', roomId, 'status', 'typing'));
-        await batch.commit();
+
+        // Firestore batches support max 500 operations
+        const docs = snap.docs;
+        for (let i = 0; i < docs.length; i += 500) {
+          const batch = writeBatch(db);
+          const chunk = docs.slice(i, i + 500);
+          chunk.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+
+        // Step 2: Delete the status subcollection docs
+        try {
+          const statusRef = collection(db, 'rooms', roomId, 'status');
+          const statusSnap = await getDocs(statusRef);
+          if (!statusSnap.empty) {
+            for (let i = 0; i < statusSnap.docs.length; i += 500) {
+              const batch = writeBatch(db);
+              const chunk = statusSnap.docs.slice(i, i + 500);
+              chunk.forEach(d => batch.delete(d.ref));
+              await batch.commit();
+            }
+          }
+        } catch(e) {
+          // Status subcollection may not exist or may have permission issues; continue
+        }
+
+        // Step 3: Delete the room document itself
         await deleteDoc(doc(db, 'rooms', roomId));
+
         showToast('Conversation deleted', 'success');
       } catch(e) {
         showToast('Delete failed', 'error');
@@ -1181,7 +1453,7 @@ function compressImage(file, maxWidth, quality) {
       img.onload = () => {
         let w = img.width;
         let h = img.height;
-        // Scale down if wider than maxWidth
+        // Force scale-down: if wider than maxWidth, resize
         if (w > maxWidth) {
           h = Math.round(h * (maxWidth / w));
           w = maxWidth;
@@ -1191,8 +1463,8 @@ function compressImage(file, maxWidth, quality) {
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        // Export as compressed JPEG data URL
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        // Export as WebP with given quality
+        const compressedDataUrl = canvas.toDataURL('image/webp', quality);
         resolve(compressedDataUrl);
       };
       img.onerror = () => reject(new Error('Image load failed'));
@@ -1205,32 +1477,21 @@ function compressImage(file, maxWidth, quality) {
 
 async function handleFileSelect(file) {
   if (!file) return;
-  const MAX_SIZE = 400 * 1024; // 400KB strict limit
-  if (file.size >= MAX_SIZE) {
-    showToast(`File too large (${(file.size/1024).toFixed(0)}KB). Max 400KB.`, 'error');
-    document.getElementById('file-input').value = '';
-    return;
-  }
 
   const isImage = file.type && file.type.startsWith('image/');
   let finalB64;
 
-  if (isImage && file.size > 300 * 1024) {
-    // Image > 300KB: compress via Canvas pipeline
+  if (isImage) {
+    // Aggressive image compression pipeline
     try {
-      finalB64 = await compressImage(file, 1280, 0.6);
-      // Check compressed size (Base64 ~1.37x of binary)
-      const base64Data = finalB64.split(',')[1] || '';
-      const estimatedBytes = Math.ceil(base64Data.length * 0.75);
-      if (estimatedBytes >= MAX_SIZE) {
-        // Try harder compression
-        finalB64 = await compressImage(file, 800, 0.4);
-        const retryBytes = Math.ceil((finalB64.split(',')[1] || '').length * 0.75);
-        if (retryBytes >= MAX_SIZE) {
-          showToast('Image too large even after compression. Max 400KB.', 'error');
-          document.getElementById('file-input').value = '';
-          return;
-        }
+      // Force resize to 800px max width, export as WebP at quality 0.5
+      finalB64 = await compressImage(file, 800, 0.5);
+
+      // Enforce strict pre-upload check: 650,000 characters max (~500KB)
+      if (finalB64.length > 650000) {
+        showToast('Image too large even after compression. Max ~500KB.', 'error');
+        document.getElementById('file-input').value = '';
+        return;
       }
     } catch(e) {
       showToast('Image compression failed', 'error');
@@ -1238,19 +1499,24 @@ async function handleFileSelect(file) {
       return;
     }
   } else {
-    // Read as-is
+    // Non-image files: read as-is but enforce the same 650K character limit
     finalB64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => resolve(e.target.result);
       reader.onerror = () => reject(new Error('File read failed'));
       reader.readAsDataURL(file);
     });
+
+    if (finalB64.length > 650000) {
+      showToast('File too large. Max ~500KB.', 'error');
+      document.getElementById('file-input').value = '';
+      return;
+    }
   }
 
   pendingFile = { name: file.name, mime: file.type || 'application/octet-stream', b64: finalB64 };
 
   const bar = document.getElementById('file-preview-bar');
-  // Use only classList for visibility — no .style.display
   bar.classList.remove('hidden');
 
   document.getElementById('file-preview-name').textContent = file.name;
@@ -1290,11 +1556,10 @@ function initVoice() {
   if (!SR) return;
   recognition = new SR();
   recognition.continuous = false;
-  recognition.interimResults = false; // FIX: Only process final results
+  recognition.interimResults = false;
   recognition.lang = 'en-US';
 
   recognition.onresult = (e) => {
-    // FIX: Only read final verified speech results
     let finalTranscript = '';
     for (let i = 0; i < e.results.length; i++) {
       if (e.results[i].isFinal) {
@@ -1442,11 +1707,24 @@ document.getElementById('btn-mic').addEventListener('click', toggleVoice);
 
 document.getElementById('btn-nuke').addEventListener('click', nukeConversation);
 
+document.getElementById('btn-clear').addEventListener('click', clearForMe);
+
 document.getElementById('file-input').addEventListener('change', (e) => {
   handleFileSelect(e.target.files[0]);
 });
 
 document.getElementById('btn-cancel-file').addEventListener('click', clearPendingFile);
+
+// Online pill click
+document.getElementById('online-pill').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const popover = document.getElementById('online-popover');
+  if (popover.classList.contains('hidden')) {
+    showOnlinePopover();
+  } else {
+    popover.classList.add('hidden');
+  }
+});
 
 // Share modal
 document.getElementById('btn-share').addEventListener('click', () => {
@@ -1482,7 +1760,8 @@ document.addEventListener('click', (e) => {
 // Hash change support
 window.addEventListener('hashchange', () => {
   if (unsubscribe) unsubscribe();
-  if (unsubscribeTyping) unsubscribeTyping();
+  if (unsubscribePresence) unsubscribePresence();
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
   document.getElementById('messages-container').querySelectorAll('.message-wrapper').forEach(el => el.remove());
   const emptyState = document.getElementById('empty-state');
   if (emptyState) emptyState.style.display = '';
@@ -1495,3 +1774,4 @@ initVoice();
 initNickname();
 </script>
 </body>
+</html>
