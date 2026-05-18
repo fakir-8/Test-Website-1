@@ -7,7 +7,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&family=Tiro+Bangla&display=swap" rel="stylesheet" />
 
 <script>
   tailwind.config = {
@@ -17,6 +17,7 @@
         fontFamily: {
           sans: ['DM Sans', 'sans-serif'],
           mono: ['JetBrains Mono', 'monospace'],
+          bangla: ['Anek Bangla', 'Tiro Bangla', 'sans-serif'],
         },
         colors: {
           surface: {
@@ -45,6 +46,8 @@
           'shake': 'shake 0.4s ease',
           'toast-in': 'toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
           'toast-out': 'toastOut 0.25s ease forwards',
+          'pop-in': 'popIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          'typing-slide': 'typingSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         },
         keyframes: {
           slideUp: {
@@ -73,6 +76,14 @@
           toastOut: {
             '0%': { opacity: '1', transform: 'translateY(0) scale(1)' },
             '100%': { opacity: '0', transform: 'translateY(10px) scale(0.95)' },
+          },
+          popIn: {
+            '0%': { opacity: '0', transform: 'scale(0.6)' },
+            '100%': { opacity: '1', transform: 'scale(1)' },
+          },
+          typingSlide: {
+            '0%': { opacity: '0', transform: 'translateY(6px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' },
           },
         },
       }
@@ -267,9 +278,80 @@
   }
   @media (max-width: 640px) {
     #messages-container {
-      /* Ensure messages don't hide under input */
       padding-bottom: 8px;
     }
+  }
+
+  /* Reaction pill */
+  .reaction-pill {
+    position: absolute;
+    z-index: 40;
+    display: flex;
+    gap: 2px;
+    padding: 4px 6px;
+    border-radius: 24px;
+    background: rgba(19, 19, 26, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    animation: popIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .reaction-pill button {
+    font-size: 20px;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: background 0.12s, transform 0.1s;
+  }
+  .reaction-pill button:hover {
+    background: rgba(255,255,255,0.1);
+    transform: scale(1.25);
+  }
+  .reaction-pill button:active {
+    transform: scale(0.95);
+  }
+
+  /* Reaction badges on bubbles */
+  .reaction-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: background 0.12s, transform 0.1s;
+  }
+  .reaction-badge:hover {
+    background: rgba(255,255,255,0.14);
+  }
+  .reaction-badge:active {
+    transform: scale(0.92);
+  }
+  .reaction-badge .react-count {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* Nickname badge */
+  .sender-name {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    letter-spacing: 0.02em;
+  }
+
+  /* Auto Bangla font detection */
+  .msg-text-content {
+    word-break: break-word;
   }
 </style>
 </head>
@@ -278,6 +360,22 @@
 
 <!-- TOAST CONTAINER -->
 <div id="toast-container" class="toast pointer-events-none" style="z-index:9999;"></div>
+
+<!-- NICKNAME MODAL -->
+<div id="nickname-modal" class="fixed inset-0 modal-overlay flex items-center justify-center z-[60] p-4">
+  <div class="glass rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-slide-up text-center">
+    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-400/20 to-purple-600/20 border border-accent-400/20 flex items-center justify-center mx-auto mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+    </div>
+    <h2 class="font-semibold text-white text-lg mb-1">Welcome to CipherChat</h2>
+    <p class="text-xs text-gray-400 mb-5 leading-relaxed">Choose a nickname so others know who you are. Your name is encrypted end-to-end along with your messages.</p>
+    <input id="nickname-input" type="text" maxlength="24" placeholder="Enter your nickname…"
+      class="w-full px-4 py-3 rounded-xl text-sm text-white bg-surface-700 border border-white/10 placeholder-gray-500 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20 transition-all mb-4 text-center font-medium" autocomplete="off" />
+    <button id="nickname-submit" class="w-full py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-accent-500 to-purple-600 text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+      Join Chat
+    </button>
+  </div>
+</div>
 
 <!-- CONFIRM MODAL -->
 <div id="confirm-modal" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 hidden animate-fade-in p-4">
@@ -367,6 +465,18 @@
     <!-- Messages injected here -->
   </div>
 
+  <!-- TYPING INDICATOR -->
+  <div id="typing-indicator" class="hidden px-4 py-1.5 animate-typing-slide flex-shrink-0">
+    <div class="flex items-center gap-2">
+      <div class="flex gap-1">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+      <span id="typing-text" class="text-xs text-gray-500"></span>
+    </div>
+  </div>
+
   <!-- EMOJI PICKER -->
   <div id="emoji-picker" class="hidden glass border-b border-white/5 flex-shrink-0 animate-slide-up">
     <div class="p-3 max-h-44 overflow-y-auto">
@@ -424,7 +534,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, deleteDoc, doc,
-  onSnapshot, query, orderBy, serverTimestamp, getDocs, writeBatch
+  onSnapshot, query, orderBy, serverTimestamp, getDocs, writeBatch,
+  setDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 // ─── FIREBASE INIT ──────────────────────────────────────────────────────────
@@ -490,13 +601,64 @@ let roomId = null;
 let cryptoKey = null;
 let rawKeyHex = null;
 let unsubscribe = null;
+let unsubscribeTyping = null;
 let pendingFile = null;
 let sentMessageIds = new Set();
+let nickname = null;
+let typingDebounceTimer = null;
+let activeReactionPill = null;
+
 const LOCAL_SENDER_ID = (() => {
   let id = sessionStorage.getItem('_cid');
   if (!id) { id = Math.random().toString(36).slice(2, 10); sessionStorage.setItem('_cid', id); }
   return id;
 })();
+
+// ─── BANGLA FONT DETECTION ───────────────────────────────────────────────────
+const BANGLA_REGEX = /[\u0980-\u09FF]/;
+function containsBangla(text) {
+  return BANGLA_REGEX.test(text);
+}
+
+// ─── NICKNAME SYSTEM ─────────────────────────────────────────────────────────
+function initNickname() {
+  const stored = sessionStorage.getItem('_nickname');
+  if (stored) {
+    nickname = stored;
+    document.getElementById('nickname-modal').classList.add('hidden');
+    initSession();
+    return;
+  }
+  // Show modal (already visible by default)
+  const input = document.getElementById('nickname-input');
+  const btn = document.getElementById('nickname-submit');
+
+  const validate = () => {
+    const val = input.value.trim();
+    btn.disabled = val.length < 1;
+  };
+
+  input.addEventListener('input', validate);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !btn.disabled) {
+      submitNickname();
+    }
+  });
+  btn.addEventListener('click', submitNickname);
+
+  // Focus input
+  setTimeout(() => input.focus(), 300);
+}
+
+function submitNickname() {
+  const input = document.getElementById('nickname-input');
+  const val = input.value.trim();
+  if (!val) return;
+  nickname = val;
+  sessionStorage.setItem('_nickname', nickname);
+  document.getElementById('nickname-modal').classList.add('hidden');
+  initSession();
+}
 
 // ─── INIT: PARSE HASH ────────────────────────────────────────────────────────
 async function initSession() {
@@ -504,11 +666,9 @@ async function initSession() {
   const parts = hash.split(':');
 
   if (parts.length >= 2 && parts[0].length > 3 && parts[1].length > 10) {
-    // Existing session
     roomId = parts[0];
-    rawKeyHex = parts.slice(1).join(':'); // key might have colons from hex
+    rawKeyHex = parts.slice(1).join(':');
   } else {
-    // New session
     roomId = generateRoomId();
     rawKeyHex = Crypto.generateKey();
     window.location.hash = `${roomId}:${rawKeyHex}`;
@@ -517,7 +677,7 @@ async function initSession() {
   try {
     cryptoKey = await Crypto.importKey(rawKeyHex);
   } catch(e) {
-    showToast('⚠️ Invalid encryption key in URL', 'error');
+    showToast('Invalid encryption key in URL', 'error');
     return;
   }
 
@@ -526,9 +686,10 @@ async function initSession() {
   document.getElementById('share-url-text').textContent = window.location.href;
 
   subscribeMessages();
+  subscribeTypingStatus();
 }
 
-// ─── FIRESTORE LISTENER ──────────────────────────────────────────────────────
+// ─── FIRESTORE MESSAGE LISTENER ──────────────────────────────────────────────
 function subscribeMessages() {
   const msgsRef = collection(db, 'rooms', roomId, 'messages');
   const q = query(msgsRef, orderBy('ts', 'asc'));
@@ -540,7 +701,7 @@ function subscribeMessages() {
       if (change.type === 'added') {
         await renderMessage(change.doc);
       } else if (change.type === 'modified') {
-        await renderMessage(change.doc);
+        await updateMessageReactions(change.doc);
       } else if (change.type === 'removed') {
         const el = document.getElementById(`msg-${change.doc.id}`);
         if (el) {
@@ -561,30 +722,122 @@ function subscribeMessages() {
   });
 }
 
+// ─── TYPING STATUS ───────────────────────────────────────────────────────────
+function subscribeTypingStatus() {
+  if (unsubscribeTyping) unsubscribeTyping();
+  const typingDocRef = doc(db, 'rooms', roomId, 'status', 'typing');
+  unsubscribeTyping = onSnapshot(typingDocRef, (snap) => {
+    if (!snap.exists()) {
+      hideTypingIndicator();
+      return;
+    }
+    const data = snap.data();
+    // Filter out current user
+    const otherTyping = Object.entries(data).filter(([key]) => key !== LOCAL_SENDER_ID && key !== '_meta');
+    if (otherTyping.length === 0) {
+      hideTypingIndicator();
+    } else {
+      const names = otherTyping.map(([, val]) => val.nickname || 'Someone');
+      showTypingIndicator(names);
+    }
+  });
+}
+
+async function setTypingStatus(isTyping) {
+  if (!roomId || !cryptoKey) return;
+  const typingDocRef = doc(db, 'rooms', roomId, 'status', 'typing');
+  try {
+    if (isTyping) {
+      const encNickname = await Crypto.encrypt(nickname || 'Anonymous', cryptoKey);
+      await setDoc(typingDocRef, {
+        [LOCAL_SENDER_ID]: { nickname: nickname || 'Anonymous', ts: Date.now() }
+      }, { merge: true });
+    } else {
+      await setDoc(typingDocRef, {
+        [LOCAL_SENDER_ID]: {}
+      }, { merge: true });
+    }
+  } catch(e) {
+    // Silently ignore typing status errors
+  }
+}
+
+function handleTypingInput() {
+  // Clear any existing debounce timer
+  if (typingDebounceTimer) clearTimeout(typingDebounceTimer);
+
+  // Set typing status to true
+  setTypingStatus(true);
+
+  // Debounce: remove typing status after 2.5 seconds of inactivity
+  typingDebounceTimer = setTimeout(() => {
+    setTypingStatus(false);
+  }, 2500);
+}
+
+function showTypingIndicator(names) {
+  const indicator = document.getElementById('typing-indicator');
+  const textEl = document.getElementById('typing-text');
+  let text = '';
+  if (names.length === 1) {
+    text = `${names[0]} is typing…`;
+  } else if (names.length === 2) {
+    text = `${names[0]} and ${names[1]} are typing…`;
+  } else {
+    text = `${names[0]} and ${names.length - 1} others are typing…`;
+  }
+  textEl.textContent = text;
+  indicator.classList.remove('hidden');
+}
+
+function hideTypingIndicator() {
+  document.getElementById('typing-indicator').classList.add('hidden');
+}
+
+// Clean up typing on window blur
+window.addEventListener('blur', () => {
+  if (typingDebounceTimer) clearTimeout(typingDebounceTimer);
+  setTypingStatus(false);
+});
+
+// Clean up typing before page unload
+window.addEventListener('beforeunload', () => {
+  if (roomId) {
+    const typingDocRef = doc(db, 'rooms', roomId, 'status', 'typing');
+    // Use navigator.sendBeacon is not available for Firestore,
+    // so we do a best-effort setDoc with merge
+    setDoc(typingDocRef, { [LOCAL_SENDER_ID]: {} }, { merge: true }).catch(() => {});
+  }
+});
+
 // ─── RENDER MESSAGE ──────────────────────────────────────────────────────────
 async function renderMessage(docSnap) {
   const data = docSnap.data();
   const existingEl = document.getElementById(`msg-${docSnap.id}`);
 
-  // If element already exists, just update the timestamp dynamically
+  // If element already exists, update it
   if (existingEl) {
+    // Update timestamp
     if (data.ts?.toDate) {
       const newTimeStr = new Intl.DateTimeFormat([], {hour:'2-digit',minute:'2-digit'}).format(data.ts.toDate());
       const tsSpan = existingEl.querySelector('.msg-timestamp');
       if (tsSpan) tsSpan.textContent = newTimeStr;
     }
+    // Update reactions if present
+    await renderReactionsOnElement(existingEl, data);
     return;
   }
 
   const isMine = data.sender === LOCAL_SENDER_ID;
 
-  let text = null, fileName = null, fileMime = null, fileData = null;
+  let text = null, fileName = null, fileMime = null, fileData = null, senderName = null;
 
   try {
     if (data.text) text = await Crypto.decrypt(data.text, cryptoKey);
     if (data.fileName) fileName = await Crypto.decrypt(data.fileName, cryptoKey);
     if (data.fileMime) fileMime = await Crypto.decrypt(data.fileMime, cryptoKey);
     if (data.fileData) fileData = await Crypto.decrypt(data.fileData, cryptoKey);
+    if (data.senderName) senderName = await Crypto.decrypt(data.senderName, cryptoKey);
   } catch(e) {
     text = '[Decryption failed — wrong key?]';
   }
@@ -598,6 +851,9 @@ async function renderMessage(docSnap) {
 
   let bubble = '';
 
+  // Sender name for received messages
+  const senderNameHtml = (!isMine && senderName) ? `<p class="sender-name text-accent-400">${escHtml(senderName)}</p>` : '';
+
   // File rendering
   if (fileData && fileName) {
     const isImage = fileMime && fileMime.startsWith('image/');
@@ -605,7 +861,8 @@ async function renderMessage(docSnap) {
 
     if (isImage) {
       bubble = `
-        <div class="${isMine ? 'msg-bubble-out' : 'msg-bubble-in'} rounded-2xl ${isMine ? 'rounded-tr-md' : 'rounded-tl-md'} overflow-hidden max-w-[260px]">
+        <div class="msg-bubble-content ${isMine ? 'msg-bubble-out' : 'msg-bubble-in'} rounded-2xl ${isMine ? 'rounded-tr-md' : 'rounded-tl-md'} overflow-hidden max-w-[260px] relative" data-msg-id="${docSnap.id}">
+          ${senderNameHtml}
           <div class="relative group">
             <img src="${escHtml(dataUrl)}" alt="${escHtml(fileName)}" class="msg-image block" />
             <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2">
@@ -619,10 +876,12 @@ async function renderMessage(docSnap) {
           <div class="px-3 py-1.5 flex items-center justify-end gap-1.5">
             <span class="msg-timestamp text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">${timeStr}</span>
           </div>
+          <div class="reactions-container"></div>
         </div>`;
     } else {
       bubble = `
-        <div class="${isMine ? 'msg-bubble-out' : 'msg-bubble-in'} rounded-2xl ${isMine ? 'rounded-tr-md' : 'rounded-tl-md'} px-3 py-2.5 max-w-[260px]">
+        <div class="msg-bubble-content ${isMine ? 'msg-bubble-out' : 'msg-bubble-in'} rounded-2xl ${isMine ? 'rounded-tr-md' : 'rounded-tl-md'} px-3 py-2.5 max-w-[260px] relative" data-msg-id="${docSnap.id}">
+          ${senderNameHtml}
           <div class="flex items-center gap-2.5">
             <div class="w-9 h-9 rounded-lg ${isMine ? 'bg-white/20' : 'bg-surface-600'} flex items-center justify-center flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 ${isMine ? 'text-white' : 'text-accent-400'}" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -639,20 +898,24 @@ async function renderMessage(docSnap) {
           <div class="flex items-center justify-end mt-1.5">
             <span class="msg-timestamp text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">${timeStr}</span>
           </div>
+          <div class="reactions-container"></div>
         </div>`;
     }
   }
 
   // Text rendering
   if (text) {
+    const banglaClass = containsBangla(text) ? 'font-bangla' : '';
     const escapedText = escHtml(text).replace(/\n/g, '<br>');
     bubble += `
-      <div class="${isMine ? 'msg-bubble-out' : 'msg-bubble-in'} rounded-2xl ${isMine ? 'rounded-tr-md' : 'rounded-tl-md'} px-3.5 py-2 max-w-[280px]">
-        <p class="text-sm ${isMine ? 'text-white' : 'text-gray-100'} leading-relaxed break-words">${escapedText}</p>
+      <div class="msg-bubble-content ${isMine ? 'msg-bubble-out' : 'msg-bubble-in'} rounded-2xl ${isMine ? 'rounded-tr-md' : 'rounded-tl-md'} px-3.5 py-2 max-w-[280px] relative" data-msg-id="${docSnap.id}">
+        ${senderNameHtml}
+        <p class="msg-text-content text-sm ${isMine ? 'text-white' : 'text-gray-100'} leading-relaxed break-words ${banglaClass}">${escapedText}</p>
         <div class="flex items-center justify-end gap-1 mt-1">
           <span class="msg-timestamp text-xs ${isMine ? 'text-white/50' : 'text-gray-500'}">${timeStr}</span>
           ${isMine ? `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` : ''}
         </div>
+        <div class="reactions-container"></div>
       </div>`;
   }
 
@@ -672,7 +935,162 @@ async function renderMessage(docSnap) {
        </div>`;
 
   container.appendChild(wrapper);
+
+  // Render reactions
+  await renderReactionsOnElement(wrapper, data);
+
+  // Attach reaction event listeners to all bubble contents
+  attachReactionListeners(wrapper, docSnap.id);
 }
+
+// ─── UPDATE MESSAGE (for modified docs — reactions) ──────────────────────────
+async function updateMessageReactions(docSnap) {
+  const data = docSnap.data();
+  const existingEl = document.getElementById(`msg-${docSnap.id}`);
+  if (existingEl) {
+    await renderReactionsOnElement(existingEl, data);
+  }
+}
+
+// ─── REACTIONS RENDERING ─────────────────────────────────────────────────────
+async function renderReactionsOnElement(wrapperEl, data) {
+  const reactionsContainer = wrapperEl.querySelector('.reactions-container');
+  if (!reactionsContainer) return;
+
+  if (!data.reactions || Object.keys(data.reactions).length === 0) {
+    reactionsContainer.innerHTML = '';
+    return;
+  }
+
+  // Aggregate reactions: emoji -> count + highlight if mine
+  const emojiMap = {};
+  for (const [uid, val] of Object.entries(data.reactions)) {
+    if (!val || !val.emoji) continue;
+    if (!emojiMap[val.emoji]) {
+      emojiMap[val.emoji] = { count: 0, isMine: false };
+    }
+    emojiMap[val.emoji].count++;
+    if (uid === LOCAL_SENDER_ID) {
+      emojiMap[val.emoji].isMine = true;
+    }
+  }
+
+  let html = '<div class="flex flex-wrap gap-1 mt-1">';
+  for (const [emoji, info] of Object.entries(emojiMap)) {
+    const highlight = info.isMine ? 'border-accent-500/40 bg-accent-500/10' : '';
+    html += `<button class="reaction-badge ${highlight}" onclick="reactToMessage('${data._docId || ''}', '${emoji}')">${emoji}<span class="react-count">${info.count > 1 ? info.count : ''}</span></button>`;
+  }
+  html += '</div>';
+  reactionsContainer.innerHTML = html;
+}
+
+// ─── REACTION EVENT LISTENERS ────────────────────────────────────────────────
+function attachReactionListeners(wrapperEl, msgId) {
+  const bubbleContents = wrapperEl.querySelectorAll('.msg-bubble-content');
+  bubbleContents.forEach(bubble => {
+    // Right-click (desktop)
+    bubble.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      openReactionPill(bubble, msgId);
+    });
+
+    // Long press (mobile)
+    let pressTimer = null;
+    let longPressed = false;
+
+    bubble.addEventListener('touchstart', (e) => {
+      longPressed = false;
+      pressTimer = setTimeout(() => {
+        longPressed = true;
+        e.preventDefault();
+        openReactionPill(bubble, msgId);
+      }, 500);
+    }, { passive: false });
+
+    bubble.addEventListener('touchend', () => {
+      clearTimeout(pressTimer);
+    });
+
+    bubble.addEventListener('touchmove', () => {
+      clearTimeout(pressTimer);
+    });
+  });
+}
+
+// ─── REACTION PILL ───────────────────────────────────────────────────────────
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+function openReactionPill(bubbleEl, msgId) {
+  // Close any existing pill
+  closeReactionPill();
+
+  const pill = document.createElement('div');
+  pill.className = 'reaction-pill';
+  pill.id = 'active-reaction-pill';
+
+  REACTION_EMOJIS.forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.textContent = emoji;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      reactToMessage(msgId, emoji);
+      closeReactionPill();
+    });
+    pill.appendChild(btn);
+  });
+
+  // Position the pill above the bubble
+  const bubbleRect = bubbleEl.getBoundingClientRect();
+  const parentContainer = bubbleEl.closest('.message-wrapper') || bubbleEl.parentElement;
+
+  pill.style.position = 'fixed';
+  pill.style.left = `${Math.max(8, Math.min(bubbleRect.left, window.innerWidth - 280))}px`;
+
+  // If the bubble is in the top half, show pill below; otherwise above
+  if (bubbleRect.top < 120) {
+    pill.style.top = `${bubbleRect.bottom + 6}px`;
+  } else {
+    pill.style.bottom = `${window.innerHeight - bubbleRect.top + 6}px`;
+    pill.style.top = 'auto';
+  }
+
+  document.body.appendChild(pill);
+  activeReactionPill = pill;
+
+  // Close pill on outside click
+  setTimeout(() => {
+    document.addEventListener('click', closeReactionPillOnOutside, { once: true });
+    document.addEventListener('touchstart', closeReactionPillOnOutside, { once: true });
+  }, 50);
+}
+
+function closeReactionPill() {
+  if (activeReactionPill) {
+    activeReactionPill.remove();
+    activeReactionPill = null;
+  }
+}
+
+function closeReactionPillOnOutside(e) {
+  if (activeReactionPill && !activeReactionPill.contains(e.target)) {
+    closeReactionPill();
+  }
+}
+
+// ─── REACT TO MESSAGE (global) ───────────────────────────────────────────────
+window.reactToMessage = async (msgId, emoji) => {
+  if (!msgId || !cryptoKey) return;
+  try {
+    const msgDocRef = doc(db, 'rooms', roomId, 'messages', msgId);
+    // Use updateDoc to set the reaction for this user
+    // reactions: { [userId]: { emoji, nickname } }
+    await updateDoc(msgDocRef, {
+      [`reactions.${LOCAL_SENDER_ID}`]: { emoji, nickname: nickname || 'Anonymous' }
+    });
+  } catch(e) {
+    showToast('Could not add reaction', 'error');
+  }
+};
 
 // ─── SEND MESSAGE ────────────────────────────────────────────────────────────
 async function sendMessage() {
@@ -687,6 +1105,9 @@ async function sendMessage() {
   try {
     const payload = { sender: LOCAL_SENDER_ID, ts: serverTimestamp() };
 
+    // Encrypt and attach nickname
+    payload.senderName = await Crypto.encrypt(nickname || 'Anonymous', cryptoKey);
+
     if (pendingFile) {
       const { name, mime, b64 } = pendingFile;
       payload.fileName = await Crypto.encrypt(name, cryptoKey);
@@ -699,10 +1120,17 @@ async function sendMessage() {
       payload.text = await Crypto.encrypt(text, cryptoKey);
     }
 
+    // Initialize empty reactions map
+    payload.reactions = {};
+
     await addDoc(collection(db, 'rooms', roomId, 'messages'), payload);
     input.value = '';
     input.style.height = 'auto';
     updateSendBtn();
+
+    // Clear typing status
+    if (typingDebounceTimer) clearTimeout(typingDebounceTimer);
+    setTypingStatus(false);
   } catch(e) {
     showToast('Failed to send message', 'error');
     console.error(e);
@@ -731,9 +1159,11 @@ async function nukeConversation() {
         const snap = await getDocs(msgsRef);
         const batch = writeBatch(db);
         snap.docs.forEach(d => batch.delete(d.ref));
+        // Also delete the typing status doc
+        batch.delete(doc(db, 'rooms', roomId, 'status', 'typing'));
         await batch.commit();
         await deleteDoc(doc(db, 'rooms', roomId));
-        showToast('🗑️ Conversation deleted', 'success');
+        showToast('Conversation deleted', 'success');
       } catch(e) {
         showToast('Delete failed', 'error');
         console.error(e);
@@ -743,34 +1173,94 @@ async function nukeConversation() {
 }
 
 // ─── FILE HANDLING ───────────────────────────────────────────────────────────
-function handleFileSelect(file) {
+function compressImage(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        // Scale down if wider than maxWidth
+        if (w > maxWidth) {
+          h = Math.round(h * (maxWidth / w));
+          w = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        // Export as compressed JPEG data URL
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('File read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleFileSelect(file) {
   if (!file) return;
-  const MAX_SIZE = 800 * 1024; // 800KB
+  const MAX_SIZE = 400 * 1024; // 400KB strict limit
   if (file.size >= MAX_SIZE) {
-    showToast(`⚠️ File too large (${(file.size/1024).toFixed(0)}KB). Max 800KB.`, 'error');
+    showToast(`File too large (${(file.size/1024).toFixed(0)}KB). Max 400KB.`, 'error');
     document.getElementById('file-input').value = '';
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const b64 = e.target.result;
-    pendingFile = { name: file.name, mime: file.type || 'application/octet-stream', b64 };
+  const isImage = file.type && file.type.startsWith('image/');
+  let finalB64;
 
-    const bar = document.getElementById('file-preview-bar');
-    bar.style.display = 'flex';
-    bar.classList.remove('hidden');
-
-    document.getElementById('file-preview-name').textContent = file.name;
-    document.getElementById('file-preview-size').textContent = `${(file.size / 1024).toFixed(1)} KB`;
-
-    const thumb = document.getElementById('file-preview-thumb');
-    if (file.type.startsWith('image/')) {
-      thumb.innerHTML = `<img src="${b64}" class="w-full h-full object-cover" />`;
+  if (isImage && file.size > 300 * 1024) {
+    // Image > 300KB: compress via Canvas pipeline
+    try {
+      finalB64 = await compressImage(file, 1280, 0.6);
+      // Check compressed size (Base64 ~1.37x of binary)
+      const base64Data = finalB64.split(',')[1] || '';
+      const estimatedBytes = Math.ceil(base64Data.length * 0.75);
+      if (estimatedBytes >= MAX_SIZE) {
+        // Try harder compression
+        finalB64 = await compressImage(file, 800, 0.4);
+        const retryBytes = Math.ceil((finalB64.split(',')[1] || '').length * 0.75);
+        if (retryBytes >= MAX_SIZE) {
+          showToast('Image too large even after compression. Max 400KB.', 'error');
+          document.getElementById('file-input').value = '';
+          return;
+        }
+      }
+    } catch(e) {
+      showToast('Image compression failed', 'error');
+      document.getElementById('file-input').value = '';
+      return;
     }
-    updateSendBtn();
-  };
-  reader.readAsDataURL(file);
+  } else {
+    // Read as-is
+    finalB64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = () => reject(new Error('File read failed'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  pendingFile = { name: file.name, mime: file.type || 'application/octet-stream', b64: finalB64 };
+
+  const bar = document.getElementById('file-preview-bar');
+  // Use only classList for visibility — no .style.display
+  bar.classList.remove('hidden');
+
+  document.getElementById('file-preview-name').textContent = file.name;
+  document.getElementById('file-preview-size').textContent = `${(file.size / 1024).toFixed(1)} KB`;
+
+  const thumb = document.getElementById('file-preview-thumb');
+  if (isImage) {
+    thumb.innerHTML = `<img src="${escHtml(finalB64)}" class="w-full h-full object-cover" />`;
+  }
+  updateSendBtn();
 }
 
 function clearPendingFile() {
@@ -800,16 +1290,23 @@ function initVoice() {
   if (!SR) return;
   recognition = new SR();
   recognition.continuous = false;
-  recognition.interimResults = true;
+  recognition.interimResults = false; // FIX: Only process final results
   recognition.lang = 'en-US';
 
   recognition.onresult = (e) => {
-    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
-    const input = document.getElementById('msg-input');
-    const existing = input.value;
-    // Append to existing text instead of overwriting
-    input.value = existing + (existing && !existing.endsWith(' ') ? ' ' : '') + transcript;
-    updateSendBtn();
+    // FIX: Only read final verified speech results
+    let finalTranscript = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        finalTranscript += e.results[i][0].transcript;
+      }
+    }
+    if (finalTranscript) {
+      const input = document.getElementById('msg-input');
+      const existing = input.value;
+      input.value = existing + (existing && !existing.endsWith(' ') ? ' ' : '') + finalTranscript.trim();
+      updateSendBtn();
+    }
   };
   recognition.onend = () => {
     isListening = false;
@@ -830,7 +1327,7 @@ function toggleVoice() {
     recognition.start();
     isListening = true;
     document.getElementById('btn-mic').classList.add('mic-active');
-    showToast('🎤 Listening…', 'info');
+    showToast('Listening...', 'info');
   }
 }
 
@@ -856,6 +1353,7 @@ function buildEmojiGrid() {
       const input = document.getElementById('msg-input');
       input.value += em;
       updateSendBtn();
+      handleTypingInput();
       input.focus();
     });
     grid.appendChild(btn);
@@ -930,7 +1428,10 @@ document.getElementById('msg-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-document.getElementById('msg-input').addEventListener('input', updateSendBtn);
+document.getElementById('msg-input').addEventListener('input', () => {
+  updateSendBtn();
+  handleTypingInput();
+});
 
 document.getElementById('btn-emoji').addEventListener('click', () => {
   const picker = document.getElementById('emoji-picker');
@@ -961,12 +1462,12 @@ document.getElementById('share-modal').addEventListener('click', (e) => {
 });
 document.getElementById('copy-share-url').addEventListener('click', async () => {
   await navigator.clipboard.writeText(window.location.href);
-  showToast('🔗 Invite link copied!', 'success');
+  showToast('Invite link copied!', 'success');
 });
 
 document.getElementById('empty-share-btn').addEventListener('click', async () => {
   await navigator.clipboard.writeText(window.location.href);
-  showToast('🔗 Invite link copied!', 'success');
+  showToast('Invite link copied!', 'success');
 });
 
 // Close emoji picker on outside click
@@ -981,6 +1482,7 @@ document.addEventListener('click', (e) => {
 // Hash change support
 window.addEventListener('hashchange', () => {
   if (unsubscribe) unsubscribe();
+  if (unsubscribeTyping) unsubscribeTyping();
   document.getElementById('messages-container').querySelectorAll('.message-wrapper').forEach(el => el.remove());
   const emptyState = document.getElementById('empty-state');
   if (emptyState) emptyState.style.display = '';
@@ -990,7 +1492,6 @@ window.addEventListener('hashchange', () => {
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 buildEmojiGrid();
 initVoice();
-initSession();
+initNickname();
 </script>
 </body>
-</html>
